@@ -1,9 +1,11 @@
 DEFINES += USAGESTATISTIC_LIBRARY
 
-KUSERFEEDBACK_PATH = "$${PWD}/3rdparty/kuserfeedback"
+KUSERFEEDBACK_SOURCE_PATH  = "$${PWD}/3rdparty/kuserfeedback"
+KUSERFEEDBACK_BUILD_PATH   = "$${OUT_PWD}/kuserfeedback/build"
+KUSERFEEDBACK_INSTALL_PATH = "$${OUT_PWD}/kuserfeedback"
 
-INCLUDEPATH *= "$${KUSERFEEDBACK_PATH}/include" "$${PWD}"
-LIBS *= -L"$${KUSERFEEDBACK_PATH}/lib" -lKUserFeedbackCore -lKUserFeedbackWidgets -lKUserFeedbackCommon
+INCLUDEPATH *= "$${KUSERFEEDBACK_INSTALL_PATH}/include" "$${PWD}"
+LIBS *= -L"$${KUSERFEEDBACK_INSTALL_PATH}/lib" -lKUserFeedbackCore -lKUserFeedbackWidgets -lKUserFeedbackCommon
 
 CONFIG += c++1z
 QMAKE_CXXFLAGS *= -Wall -Wextra -pedantic
@@ -85,6 +87,46 @@ QTC_PLUGIN_RECOMMENDS += \
     # optional plugin dependencies. nothing here at this time
 
 ###### End _dependencies.pri contents ######
+
+!build_pass {
+    EXTRA_CMAKE_MODULES_BUILD_PATH   = "$${OUT_PWD}/extra-cmake-modules/build"
+    EXTRA_CMAKE_MODULES_SOURCE_PATH  = "$${PWD}/3rdparty/extra-cmake-modules"
+    EXTRA_CMAKE_MODULES_INSTALL_PATH = "$${OUT_PWD}/extra-cmake-modules"
+
+    # Configure extra-cmake-modules
+    system("cmake -S $$shell_path($${EXTRA_CMAKE_MODULES_SOURCE_PATH}) \
+                  -B $$shell_path($${EXTRA_CMAKE_MODULES_BUILD_PATH}) \
+                  -DCMAKE_INSTALL_PREFIX:PATH=\"$$shell_path($${EXTRA_CMAKE_MODULES_INSTALL_PATH})\"")
+
+    # "Build" extra-cmake-modules first time. This step is required to configure KUserFeedback
+    EXTRA_CMAKE_MODULES_BUILD_CMD = "cmake --build $$shell_path($${EXTRA_CMAKE_MODULES_BUILD_PATH}) --parallel --target install"
+    system("$${EXTRA_CMAKE_MODULES_BUILD_CMD}")
+
+    # Configure KUserFeedback
+    CMAKE_PREFIX_PATHS = "$$shell_path($$[QT_INSTALL_LIBS]/cmake);$$shell_path($${EXTRA_CMAKE_MODULES_INSTALL_PATH}/share/ECM/cmake)"
+    BUILD_TYPE = Debug
+    CONFIG(release, debug|release): BUILD_TYPE = Release
+    system("cmake -S $$shell_path($${KUSERFEEDBACK_SOURCE_PATH}) \
+                  -B $$shell_path($${KUSERFEEDBACK_BUILD_PATH}) \
+                  -DBUILD_SHARED_LIBS=OFF \
+                  -DCMAKE_BUILD_TYPE=$${BUILD_TYPE} \
+                  -DCMAKE_INSTALL_PREFIX:PATH=\"$$shell_path($${KUSERFEEDBACK_INSTALL_PATH})\" \
+                  -DCMAKE_PREFIX_PATH=\"$${CMAKE_PREFIX_PATHS}\" \
+                  -DKDE_INSTALL_LIBDIR=lib")
+
+    buildextracmakemodules.commands = "$${EXTRA_CMAKE_MODULES_BUILD_CMD}"
+
+    buildkuserfeedback.commands = "cmake --build $$shell_path($${KUSERFEEDBACK_BUILD_PATH}) --parallel --target install"
+    buildkuserfeedback.depends = buildextracmakemodules
+
+    # Force build order. Without this flag Make tries building targets
+    # in a random order when -jN specified.
+    # All targets themselves (but not the plugin itself) will be built in parallel
+    notParallel.target = .NOTPARALLEL
+
+    QMAKE_EXTRA_TARGETS += buildextracmakemodules buildkuserfeedback notParallel
+    PRE_TARGETDEPS += buildkuserfeedback
+}
 
 include($$IDE_SOURCE_TREE/src/qtcreatorplugin.pri)
 
