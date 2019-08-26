@@ -24,6 +24,8 @@
 ****************************************************************************/
 #pragma once
 
+#include <array>
+
 #include <QtCore/QElapsedTimer>
 
 #include <coreplugin/id.h>
