@@ -1,11 +1,8 @@
 DEFINES += USAGESTATISTIC_LIBRARY
 
-KUSERFEEDBACK_SOURCE_PATH  = "$${PWD}/3rdparty/kuserfeedback"
-KUSERFEEDBACK_BUILD_PATH   = "$${OUT_PWD}/kuserfeedback/build"
-KUSERFEEDBACK_INSTALL_PATH = "$${OUT_PWD}/kuserfeedback"
+KUSERFEEDBACK_SOURCE_PATH = "$${PWD}/3rdparty/kuserfeedback"
 
 INCLUDEPATH *= "$${KUSERFEEDBACK_INSTALL_PATH}/include" "$${PWD}"
-LIBS *= -L"$${KUSERFEEDBACK_INSTALL_PATH}/lib" -lKUserFeedbackCore -lKUserFeedbackWidgets -lKUserFeedbackCommon
 
 CONFIG += c++1z
 QMAKE_CXXFLAGS *= -Wall -Wextra -pedantic
@@ -103,9 +100,14 @@ QTC_PLUGIN_RECOMMENDS += \
     system("$${EXTRA_CMAKE_MODULES_BUILD_CMD}")
 
     # Configure KUserFeedback
+    KUSERFEEDBACK_BUILD_PATH   = "$${OUT_PWD}/kuserfeedback/build"
+    KUSERFEEDBACK_INSTALL_PATH = "$${OUT_PWD}/kuserfeedback"
+
     CMAKE_PREFIX_PATHS = "$$shell_path($$[QT_INSTALL_LIBS]/cmake);$$shell_path($${EXTRA_CMAKE_MODULES_INSTALL_PATH}/share/ECM/cmake)"
+
     BUILD_TYPE = Debug
     CONFIG(release, debug|release): BUILD_TYPE = Release
+
     system("cmake -S $$shell_path($${KUSERFEEDBACK_SOURCE_PATH}) \
                   -B $$shell_path($${KUSERFEEDBACK_BUILD_PATH}) \
                   -DBUILD_SHARED_LIBS=OFF \
@@ -129,6 +131,12 @@ QTC_PLUGIN_RECOMMENDS += \
 }
 
 include($$IDE_SOURCE_TREE/src/qtcreatorplugin.pri)
+
+# Put it here to use qtLibraryName function without extra hacks
+LIBS *= -L"$$shell_path($${KUSERFEEDBACK_INSTALL_PATH}/lib)" \
+            -l$$qtLibraryName(KUserFeedbackCore)             \
+            -l$$qtLibraryName(KUserFeedbackWidgets)          \
+            -l$$qtLibraryName(KUserFeedbackCommon)
 
 FORMS += \
     ui/usagestatisticwidget.ui \
