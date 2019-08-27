@@ -111,6 +111,14 @@ QTC_PLUGIN_RECOMMENDS += \
     system("cmake -S $$shell_path($${KUSERFEEDBACK_SOURCE_PATH}) \
                   -B $$shell_path($${KUSERFEEDBACK_BUILD_PATH}) \
                   -DBUILD_SHARED_LIBS=OFF \
+                  -DENABLE_SURVEY_TARGET_EXPRESSIONS=OFF \
+                  -DENABLE_PHP=OFF \
+                  -DENABLE_PHP_UNIT=OFF \
+                  -DENABLE_TESTING=OFF \
+                  -DENABLE_DOCS=OFF \
+                  -DENABLE_CONSOLE=OFF \
+                  -DENABLE_CLI=OFF \
+                  -DBUILD_SHARED_LIBS=OFF \
                   -DCMAKE_BUILD_TYPE=$${BUILD_TYPE} \
                   -DCMAKE_INSTALL_PREFIX:PATH=\"$$shell_path($${KUSERFEEDBACK_INSTALL_PATH})\" \
                   -DCMAKE_PREFIX_PATH=\"$${CMAKE_PREFIX_PATHS}\" \
