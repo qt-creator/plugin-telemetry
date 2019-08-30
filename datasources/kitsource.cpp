@@ -80,7 +80,7 @@ public:
         static const QString qtQmlCompilerSupportKey = QStringLiteral("qmlCompiler");
         static const QString qtAbisKey = QStringLiteral("abis");
 
-        if (auto qtVersion = QtSupport::QtKitInformation::qtVersion(&m_kit)) {
+        if (auto qtVersion = QtSupport::QtKitAspect::qtVersion(&m_kit)) {
             QVariantMap qtData;
             qtData.insert(versionKey(), qtVersion->qtVersionString());
             qtData.insert(qtQmlDebuggingSupportKey, qtVersion->isQmlDebuggingSupported());
@@ -97,7 +97,7 @@ public:
     {
         static const QString compilerKey = QStringLiteral("compiler");
 
-        if (auto toolChain = ToolChainKitInformation::toolChain(&m_kit, Constants::CXX_LANGUAGE_ID)) {
+        if (auto toolChain = ToolChainKitAspect::toolChain(&m_kit, Constants::CXX_LANGUAGE_ID)) {
             m_map.insert(compilerKey,
                          QVariantMap{{nameKey(), toolChain->typeDisplayName()},
                                      {versionKey(), extractToolChainVersion(*toolChain)}});
@@ -110,7 +110,7 @@ public:
     {
         static const QString debuggerKey = QStringLiteral("debugger");
 
-        if (auto debuggerInfo = Debugger::DebuggerKitInformation::debugger(&m_kit)) {
+        if (auto debuggerInfo = Debugger::DebuggerKitAspect::debugger(&m_kit)) {
             m_map.insert(debuggerKey,
                          QVariantMap{{nameKey(), debuggerInfo->engineTypeName()},
                                      {versionKey(), debuggerInfo->version()}});
