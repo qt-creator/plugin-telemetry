@@ -108,18 +108,26 @@ QTC_PLUGIN_RECOMMENDS += \
     BUILD_TYPE = Debug
     CONFIG(release, debug|release): BUILD_TYPE = Release
 
+    KUSERFEEDBACK_DEFINES = \
+        -DCMAKE_BUILD_TYPE=$${BUILD_TYPE}
+
+    macos: KUSERFEEDBACK_DEFINES *= -DCMAKE_OSX_DEPLOYMENT_TARGET=$${QMAKE_MACOSX_DEPLOYMENT_TARGET}
+
+    KUSERFEEDBACK_COMPONENTS = \
+        -DBUILD_SHARED_LIBS=OFF \
+        -DENABLE_SURVEY_TARGET_EXPRESSIONS=OFF \
+        -DENABLE_PHP=OFF \
+        -DENABLE_PHP_UNIT=OFF \
+        -DENABLE_TESTING=OFF \
+        -DENABLE_DOCS=OFF \
+        -DENABLE_CONSOLE=OFF \
+        -DENABLE_CLI=OFF \
+        -DBUILD_SHARED_LIBS=OFF
+
     system("cmake -S $$shell_path($${KUSERFEEDBACK_SOURCE_PATH}) \
                   -B $$shell_path($${KUSERFEEDBACK_BUILD_PATH}) \
-                  -DBUILD_SHARED_LIBS=OFF \
-                  -DENABLE_SURVEY_TARGET_EXPRESSIONS=OFF \
-                  -DENABLE_PHP=OFF \
-                  -DENABLE_PHP_UNIT=OFF \
-                  -DENABLE_TESTING=OFF \
-                  -DENABLE_DOCS=OFF \
-                  -DENABLE_CONSOLE=OFF \
-                  -DENABLE_CLI=OFF \
-                  -DBUILD_SHARED_LIBS=OFF \
-                  -DCMAKE_BUILD_TYPE=$${BUILD_TYPE} \
+                  $${KUSERFEEDBACK_COMPONENTS} \
+                  $${KUSERFEEDBACK_DEFINES} \
                   -DCMAKE_INSTALL_PREFIX:PATH=\"$$shell_path($${KUSERFEEDBACK_INSTALL_PATH})\" \
                   -DCMAKE_PREFIX_PATH=\"$${CMAKE_PREFIX_PATHS}\" \
                   -DKDE_INSTALL_LIBDIR=lib")
