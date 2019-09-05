@@ -5,7 +5,8 @@ KUSERFEEDBACK_INSTALL_PATH = "$${OUT_PWD}/kuserfeedback"
 INCLUDEPATH *= "$$shell_path($${KUSERFEEDBACK_INSTALL_PATH}/include)" "$${PWD}"
 
 CONFIG += c++1z
-QMAKE_CXXFLAGS *= -Wall -Wextra -pedantic
+QMAKE_CXXFLAGS *= -Wall
+!msvc:QMAKE_CXXFLAGS *= -Wextra -pedantic
 
 DEFINES += $$shell_quote(USP_AUTH_KEY=\"$$(USP_AUTH_KEY)\")
 DEFINES += $$shell_quote(USP_SERVER_URL=\"$$(USP_SERVER_URL)\")
