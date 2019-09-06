@@ -149,11 +149,11 @@ QTC_PLUGIN_RECOMMENDS += \
 
 include($$IDE_SOURCE_TREE/src/qtcreatorplugin.pri)
 
-# Put it here to use qtLibraryName function without extra hacks
+# Put it here to use qtLibraryTargetName function without extra hacks
 LIBS *= -L"$$shell_path($${KUSERFEEDBACK_INSTALL_PATH}/lib)" \
-            -l$$qtLibraryName(KUserFeedbackCore)             \
-            -l$$qtLibraryName(KUserFeedbackWidgets)          \
-            -l$$qtLibraryName(KUserFeedbackCommon)
+            -l$$qtLibraryTargetName(KUserFeedbackCore)       \
+            -l$$qtLibraryTargetName(KUserFeedbackWidgets)    \
+            -l$$qtLibraryTargetName(KUserFeedbackCommon)
 
 FORMS += \
     ui/usagestatisticwidget.ui \
