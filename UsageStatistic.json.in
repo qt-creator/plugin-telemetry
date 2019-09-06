@@ -1,9 +1,9 @@
 {
     \"Name\" : \"UsageStatistic\",
-    \"Version\" : \"1.0.0\",
-    \"CompatVersion\" : \"1.0.0\",
+    \"Version\" : \"$$QTCREATOR_VERSION\",
+    \"CompatVersion\" : \"$$QTCREATOR_COMPAT_VERSION\",
     \"Vendor\" : \"The Qt Company Ltd\",
-    \"Copyright\" : \"(C) The Qt Company Ltd\",
+    \"Copyright\" : \"(C) $$QTCREATOR_COPYRIGHT_YEAR The Qt Company Ltd\",
     \"License\" : \"GNU GPL v3\",
     \"Description\" : \"This plugin is used to collect usage statistic. All statistics are anonymous. You can switch off the plugin any time you want.\",
     \"Url\" : \"https://www.qt.io/\",
