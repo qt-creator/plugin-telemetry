@@ -86,7 +86,7 @@ QTC_PLUGIN_RECOMMENDS += \
 
 ###### End _dependencies.pri contents ######
 
-!build_pass {
+!build_pass|win32 {
     EXTRA_CMAKE_MODULES_BUILD_PATH   = "$${OUT_PWD}/extra-cmake-modules/build"
     EXTRA_CMAKE_MODULES_SOURCE_PATH  = "$${PWD}/3rdparty/extra-cmake-modules"
     EXTRA_CMAKE_MODULES_INSTALL_PATH = "$${OUT_PWD}/extra-cmake-modules"
