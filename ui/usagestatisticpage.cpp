@@ -81,6 +81,8 @@ void UsageStatisticPage::configure()
 {
     setId(Constants::USAGE_STATISTIC_PAGE_ID);
     setCategory(Constants::TELEMETRY_SETTINGS_CATEGORY_ID);
+    setCategoryIcon(Utils::Icon({{":/usagestatistic/images/settingscategory_usagestatistic.png",
+                    Utils::Theme::PanelTextColorDark}}, Utils::Icon::Tint));
 
     setDisplayName(tr("Usage Statistic"));
     setDisplayCategory(tr("Telemetry"));

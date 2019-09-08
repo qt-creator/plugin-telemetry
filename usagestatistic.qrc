@@ -1,0 +1,6 @@
+<RCC>
+    <qresource prefix="/usagestatistic">
+        <file>images/settingscategory_usagestatistic.png</file>
+        <file>images/settingscategory_usagestatistic@2x.png</file>
+    </qresource>
+</RCC>

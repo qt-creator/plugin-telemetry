@@ -49,6 +49,9 @@ HEADERS += \
     services/datasubmitter.h \
     common/utils.h
 
+RESOURCES += \
+    usagestatistic.qrc
+
 # Qt Creator linking
 
 ## Either set the IDE_SOURCE_TREE when running qmake,
