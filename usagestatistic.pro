@@ -5,7 +5,8 @@ KUSERFEEDBACK_INSTALL_PATH = "$${OUT_PWD}/kuserfeedback"
 INCLUDEPATH *= "$$shell_path($${KUSERFEEDBACK_INSTALL_PATH}/include)" "$${PWD}"
 
 CONFIG += c++1z
-QMAKE_CXXFLAGS *= -Wall -Wextra -pedantic
+QMAKE_CXXFLAGS *= -Wall
+!msvc:QMAKE_CXXFLAGS *= -Wextra -pedantic
 
 DEFINES += $$shell_quote(USP_AUTH_KEY=\"$$(USP_AUTH_KEY)\")
 DEFINES += $$shell_quote(USP_SERVER_URL=\"$$(USP_SERVER_URL)\")
@@ -48,6 +49,9 @@ HEADERS += \
     services/datasubmitter.h \
     common/utils.h
 
+RESOURCES += \
+    usagestatistic.qrc
+
 # Qt Creator linking
 
 ## Either set the IDE_SOURCE_TREE when running qmake,
@@ -85,7 +89,7 @@ QTC_PLUGIN_RECOMMENDS += \
 
 ###### End _dependencies.pri contents ######
 
-!build_pass {
+!build_pass|win32 {
     EXTRA_CMAKE_MODULES_BUILD_PATH   = "$${OUT_PWD}/extra-cmake-modules/build"
     EXTRA_CMAKE_MODULES_SOURCE_PATH  = "$${PWD}/3rdparty/extra-cmake-modules"
     EXTRA_CMAKE_MODULES_INSTALL_PATH = "$${OUT_PWD}/extra-cmake-modules"
@@ -108,18 +112,26 @@ QTC_PLUGIN_RECOMMENDS += \
     BUILD_TYPE = Debug
     CONFIG(release, debug|release): BUILD_TYPE = Release
 
+    KUSERFEEDBACK_DEFINES = \
+        -DCMAKE_BUILD_TYPE=$${BUILD_TYPE}
+
+    macos: KUSERFEEDBACK_DEFINES *= -DCMAKE_OSX_DEPLOYMENT_TARGET=$${QMAKE_MACOSX_DEPLOYMENT_TARGET}
+
+    KUSERFEEDBACK_COMPONENTS = \
+        -DBUILD_SHARED_LIBS=OFF \
+        -DENABLE_SURVEY_TARGET_EXPRESSIONS=OFF \
+        -DENABLE_PHP=OFF \
+        -DENABLE_PHP_UNIT=OFF \
+        -DENABLE_TESTING=OFF \
+        -DENABLE_DOCS=OFF \
+        -DENABLE_CONSOLE=OFF \
+        -DENABLE_CLI=OFF \
+        -DBUILD_SHARED_LIBS=OFF
+
     system("cmake -S $$shell_path($${KUSERFEEDBACK_SOURCE_PATH}) \
                   -B $$shell_path($${KUSERFEEDBACK_BUILD_PATH}) \
-                  -DBUILD_SHARED_LIBS=OFF \
-                  -DENABLE_SURVEY_TARGET_EXPRESSIONS=OFF \
-                  -DENABLE_PHP=OFF \
-                  -DENABLE_PHP_UNIT=OFF \
-                  -DENABLE_TESTING=OFF \
-                  -DENABLE_DOCS=OFF \
-                  -DENABLE_CONSOLE=OFF \
-                  -DENABLE_CLI=OFF \
-                  -DBUILD_SHARED_LIBS=OFF \
-                  -DCMAKE_BUILD_TYPE=$${BUILD_TYPE} \
+                  $${KUSERFEEDBACK_COMPONENTS} \
+                  $${KUSERFEEDBACK_DEFINES} \
                   -DCMAKE_INSTALL_PREFIX:PATH=\"$$shell_path($${KUSERFEEDBACK_INSTALL_PATH})\" \
                   -DCMAKE_PREFIX_PATH=\"$${CMAKE_PREFIX_PATHS}\" \
                   -DKDE_INSTALL_LIBDIR=lib")
@@ -140,11 +152,11 @@ QTC_PLUGIN_RECOMMENDS += \
 
 include($$IDE_SOURCE_TREE/src/qtcreatorplugin.pri)
 
-# Put it here to use qtLibraryName function without extra hacks
+# Put it here to use qtLibraryTargetName function without extra hacks
 LIBS *= -L"$$shell_path($${KUSERFEEDBACK_INSTALL_PATH}/lib)" \
-            -l$$qtLibraryName(KUserFeedbackCore)             \
-            -l$$qtLibraryName(KUserFeedbackWidgets)          \
-            -l$$qtLibraryName(KUserFeedbackCommon)
+            -l$$qtLibraryTargetName(KUserFeedbackCore)       \
+            -l$$qtLibraryTargetName(KUserFeedbackWidgets)    \
+            -l$$qtLibraryTargetName(KUserFeedbackCommon)
 
 FORMS += \
     ui/usagestatisticwidget.ui \
