@@ -100,7 +100,7 @@ QTC_PLUGIN_RECOMMENDS += \
                   -DCMAKE_INSTALL_PREFIX:PATH=\"$$shell_path($${EXTRA_CMAKE_MODULES_INSTALL_PATH})\"")
 
     # "Build" extra-cmake-modules first time. This step is required to configure KUserFeedback
-    EXTRA_CMAKE_MODULES_BUILD_CMD = "cmake --build $$shell_path($${EXTRA_CMAKE_MODULES_BUILD_PATH}) --parallel --target install"
+    EXTRA_CMAKE_MODULES_BUILD_CMD = "cmake --build $$shell_path($${EXTRA_CMAKE_MODULES_BUILD_PATH}) --target install"
     system("$${EXTRA_CMAKE_MODULES_BUILD_CMD}")
 
     # Configure KUserFeedback
@@ -138,7 +138,7 @@ QTC_PLUGIN_RECOMMENDS += \
 
     buildextracmakemodules.commands = "$${EXTRA_CMAKE_MODULES_BUILD_CMD}"
 
-    buildkuserfeedback.commands = "cmake --build $$shell_path($${KUSERFEEDBACK_BUILD_PATH}) --parallel --target install"
+    buildkuserfeedback.commands = "cmake --build $$shell_path($${KUSERFEEDBACK_BUILD_PATH}) --target install"
     buildkuserfeedback.depends = buildextracmakemodules
 
     # Force build order. Without this flag Make tries building targets
