@@ -95,6 +95,10 @@ QTC_PLUGIN_RECOMMENDS += \
     EXTRA_CMAKE_MODULES_INSTALL_PATH = "$${OUT_PWD}/extra-cmake-modules"
 
     # Configure extra-cmake-modules
+
+    # Create build directory, in case if CMake won't be able do that
+    system("$$sprintf($$QMAKE_MKDIR_CMD, $$shell_path($${EXTRA_CMAKE_MODULES_BUILD_PATH}))")
+
     system("cmake -S $$shell_path($${EXTRA_CMAKE_MODULES_SOURCE_PATH}) \
                   -B $$shell_path($${EXTRA_CMAKE_MODULES_BUILD_PATH}) \
                   -DCMAKE_INSTALL_PREFIX:PATH=\"$$shell_path($${EXTRA_CMAKE_MODULES_INSTALL_PATH})\"")
@@ -127,6 +131,9 @@ QTC_PLUGIN_RECOMMENDS += \
         -DENABLE_CONSOLE=OFF \
         -DENABLE_CLI=OFF \
         -DBUILD_SHARED_LIBS=OFF
+
+    # Create build directory, in case if CMake won't be able do that
+    system("$$sprintf($$QMAKE_MKDIR_CMD, $$shell_path($${KUSERFEEDBACK_BUILD_PATH}))")
 
     system("cmake -S $$shell_path($${KUSERFEEDBACK_SOURCE_PATH}) \
                   -B $$shell_path($${KUSERFEEDBACK_BUILD_PATH}) \
