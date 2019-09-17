@@ -100,14 +100,14 @@ QTC_PLUGIN_RECOMMENDS += \
     system("$$sprintf($$QMAKE_MKDIR_CMD, $$shell_path($${EXTRA_CMAKE_MODULES_BUILD_PATH}))")
 
     EXTRA_CMAKE_MODULES_CMAKE_CMD = \
-           "cmake -S $$shell_path($${EXTRA_CMAKE_MODULES_SOURCE_PATH}) \
-                  -B $$shell_path($${EXTRA_CMAKE_MODULES_BUILD_PATH}) \
-                  -DCMAKE_INSTALL_PREFIX:PATH=\"$$shell_path($${EXTRA_CMAKE_MODULES_INSTALL_PATH})\""
+           "$$QMAKE_CD $$system_quote($$shell_path($${EXTRA_CMAKE_MODULES_BUILD_PATH})) && \
+            cmake -DCMAKE_INSTALL_PREFIX:PATH=$$system_quote($$shell_path($${EXTRA_CMAKE_MODULES_INSTALL_PATH})) \
+            $$system_quote($$shell_path($${EXTRA_CMAKE_MODULES_SOURCE_PATH}))"
     message("$${EXTRA_CMAKE_MODULES_CMAKE_CMD}")
     system("$${EXTRA_CMAKE_MODULES_CMAKE_CMD}")
 
     # "Build" extra-cmake-modules first time. This step is required to configure KUserFeedback
-    EXTRA_CMAKE_MODULES_BUILD_CMD = "cmake --build $$shell_path($${EXTRA_CMAKE_MODULES_BUILD_PATH}) --target install"
+    EXTRA_CMAKE_MODULES_BUILD_CMD = "cmake --build $$system_quote($$shell_path($${EXTRA_CMAKE_MODULES_BUILD_PATH})) --target install"
     message("$${EXTRA_CMAKE_MODULES_BUILD_CMD}")
     system("$${EXTRA_CMAKE_MODULES_BUILD_CMD}")
 
@@ -140,19 +140,19 @@ QTC_PLUGIN_RECOMMENDS += \
     system("$$sprintf($$QMAKE_MKDIR_CMD, $$shell_path($${KUSERFEEDBACK_BUILD_PATH}))")
 
     KUSERFEEDBACK_CMAKE_CMD = \
-           "cmake -S $$shell_path($${KUSERFEEDBACK_SOURCE_PATH}) \
-                  -B $$shell_path($${KUSERFEEDBACK_BUILD_PATH}) \
-                  $${KUSERFEEDBACK_COMPONENTS} \
+           "$$QMAKE_CD $$system_quote($$shell_path($${KUSERFEEDBACK_BUILD_PATH})) && \
+            cmake $${KUSERFEEDBACK_COMPONENTS} \
                   $${KUSERFEEDBACK_DEFINES} \
-                  -DCMAKE_INSTALL_PREFIX:PATH=\"$$shell_path($${KUSERFEEDBACK_INSTALL_PATH})\" \
-                  -DCMAKE_PREFIX_PATH=\"$${CMAKE_PREFIX_PATHS}\" \
-                  -DKDE_INSTALL_LIBDIR=lib"
+                  -DCMAKE_INSTALL_PREFIX:PATH=$$system_quote($$shell_path($${KUSERFEEDBACK_INSTALL_PATH})) \
+                  -DCMAKE_PREFIX_PATH=$$system_quote($${CMAKE_PREFIX_PATHS}) \
+                  -DKDE_INSTALL_LIBDIR=lib \
+                  $$system_quote($$shell_path($${KUSERFEEDBACK_SOURCE_PATH}))"
     message("$${KUSERFEEDBACK_CMAKE_CMD}")
     system("$${KUSERFEEDBACK_CMAKE_CMD}")
 
     buildextracmakemodules.commands = "$${EXTRA_CMAKE_MODULES_BUILD_CMD}"
 
-    buildkuserfeedback.commands = "cmake --build $$shell_path($${KUSERFEEDBACK_BUILD_PATH}) --target install"
+    buildkuserfeedback.commands = "cmake --build $$system_quote($$shell_path($${KUSERFEEDBACK_BUILD_PATH})) --target install"
     buildkuserfeedback.depends = buildextracmakemodules
 
     # Force build order. Without this flag Make tries building targets
