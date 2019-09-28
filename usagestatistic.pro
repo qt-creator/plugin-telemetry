@@ -1,8 +1,6 @@
 DEFINES += USAGESTATISTIC_LIBRARY
 
-KUSERFEEDBACK_INSTALL_PATH = "$${OUT_PWD}/kuserfeedback"
-
-INCLUDEPATH *= "$$shell_path($${KUSERFEEDBACK_INSTALL_PATH}/include)" "$${PWD}"
+INCLUDEPATH *= "$${PWD}"
 
 CONFIG += c++1z
 QMAKE_CXXFLAGS *= -Wall
@@ -89,88 +87,10 @@ QTC_PLUGIN_RECOMMENDS += \
 
 ###### End _dependencies.pri contents ######
 
-!build_pass|win32 {
-    EXTRA_CMAKE_MODULES_BUILD_PATH   = "$${OUT_PWD}/extra-cmake-modules/build"
-    EXTRA_CMAKE_MODULES_SOURCE_PATH  = "$${PWD}/3rdparty/extra-cmake-modules"
-    EXTRA_CMAKE_MODULES_INSTALL_PATH = "$${OUT_PWD}/extra-cmake-modules"
-
-    # Configure extra-cmake-modules
-
-    # Create build directory, in case if CMake won't be able do that
-    system("$$sprintf($$QMAKE_MKDIR_CMD, $$shell_path($${EXTRA_CMAKE_MODULES_BUILD_PATH}))")
-
-    EXTRA_CMAKE_MODULES_CMAKE_CMD = \
-           "$$QMAKE_CD $$system_quote($$shell_path($${EXTRA_CMAKE_MODULES_BUILD_PATH})) && \
-            cmake -DCMAKE_INSTALL_PREFIX:PATH=$$system_quote($$shell_path($${EXTRA_CMAKE_MODULES_INSTALL_PATH})) \
-            $$system_quote($$shell_path($${EXTRA_CMAKE_MODULES_SOURCE_PATH}))"
-    message("$${EXTRA_CMAKE_MODULES_CMAKE_CMD}")
-    system("$${EXTRA_CMAKE_MODULES_CMAKE_CMD}")
-
-    # "Build" extra-cmake-modules first time. This step is required to configure KUserFeedback
-    EXTRA_CMAKE_MODULES_BUILD_CMD = "cmake --build $$system_quote($$shell_path($${EXTRA_CMAKE_MODULES_BUILD_PATH})) --target install"
-    message("$${EXTRA_CMAKE_MODULES_BUILD_CMD}")
-    system("$${EXTRA_CMAKE_MODULES_BUILD_CMD}")
-
-    # Configure KUserFeedback
-    KUSERFEEDBACK_BUILD_PATH  = "$${OUT_PWD}/kuserfeedback/build"
-    KUSERFEEDBACK_SOURCE_PATH = "$${PWD}/3rdparty/kuserfeedback"
-
-    CMAKE_PREFIX_PATHS = "$$shell_path($$[QT_INSTALL_LIBS]/cmake);$$shell_path($${EXTRA_CMAKE_MODULES_INSTALL_PATH}/share/ECM/cmake)"
-
-    BUILD_TYPE = Debug
-    CONFIG(release, debug|release): BUILD_TYPE = Release
-
-    KUSERFEEDBACK_DEFINES = \
-        -DCMAKE_BUILD_TYPE=$${BUILD_TYPE}
-
-    macos: KUSERFEEDBACK_DEFINES *= -DCMAKE_OSX_DEPLOYMENT_TARGET=$${QMAKE_MACOSX_DEPLOYMENT_TARGET}
-
-    KUSERFEEDBACK_COMPONENTS = \
-        -DBUILD_SHARED_LIBS=OFF \
-        -DENABLE_SURVEY_TARGET_EXPRESSIONS=OFF \
-        -DENABLE_PHP=OFF \
-        -DENABLE_PHP_UNIT=OFF \
-        -DENABLE_TESTING=OFF \
-        -DENABLE_DOCS=OFF \
-        -DENABLE_CONSOLE=OFF \
-        -DENABLE_CLI=OFF \
-        -DBUILD_SHARED_LIBS=OFF
-
-    # Create build directory, in case if CMake won't be able do that
-    system("$$sprintf($$QMAKE_MKDIR_CMD, $$shell_path($${KUSERFEEDBACK_BUILD_PATH}))")
-
-    KUSERFEEDBACK_CMAKE_CMD = \
-           "$$QMAKE_CD $$system_quote($$shell_path($${KUSERFEEDBACK_BUILD_PATH})) && \
-            cmake $${KUSERFEEDBACK_COMPONENTS} \
-                  $${KUSERFEEDBACK_DEFINES} \
-                  -DCMAKE_INSTALL_PREFIX:PATH=$$system_quote($$shell_path($${KUSERFEEDBACK_INSTALL_PATH})) \
-                  -DCMAKE_PREFIX_PATH=$$system_quote($${CMAKE_PREFIX_PATHS}) \
-                  -DKDE_INSTALL_LIBDIR=lib \
-                  $$system_quote($$shell_path($${KUSERFEEDBACK_SOURCE_PATH}))"
-    message("$${KUSERFEEDBACK_CMAKE_CMD}")
-    system("$${KUSERFEEDBACK_CMAKE_CMD}")
-
-    buildextracmakemodules.commands = "$${EXTRA_CMAKE_MODULES_BUILD_CMD}"
-
-    buildkuserfeedback.commands = "cmake --build $$system_quote($$shell_path($${KUSERFEEDBACK_BUILD_PATH})) --target install"
-    buildkuserfeedback.depends = buildextracmakemodules
-
-    # Force build order. Without this flag Make tries building targets
-    # in a random order when -jN specified.
-    # All targets themselves (but not the plugin itself) will be built in parallel
-    notParallel.target = .NOTPARALLEL
-
-    QMAKE_EXTRA_TARGETS += buildextracmakemodules buildkuserfeedback notParallel
-    PRE_TARGETDEPS += buildkuserfeedback
-}
+# KUserFeedback
+include(3rdparty/kuserfeedback/kuserfeedback.pri)
 
 include($$IDE_SOURCE_TREE/src/qtcreatorplugin.pri)
-
-# Put it here to use qtLibraryTargetName function without extra hacks
-LIBS *= -L"$$shell_path($${KUSERFEEDBACK_INSTALL_PATH}/lib)" \
-            -l$$qtLibraryTargetName(KUserFeedbackCore)       \
-            -l$$qtLibraryTargetName(KUserFeedbackWidgets)    \
-            -l$$qtLibraryTargetName(KUserFeedbackCommon)
 
 FORMS += \
     ui/usagestatisticwidget.ui \
