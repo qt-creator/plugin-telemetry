@@ -31,7 +31,8 @@ class Provider;
 class FeedbackConfigUiController;
 }
 
-namespace UsageStatistic::Internal {
+namespace UsageStatistic {
+namespace Internal {
 
 namespace Ui { class EncouragementWidget; }
 
@@ -64,5 +65,5 @@ private:
     std::unique_ptr<KUserFeedback::FeedbackConfigUiController> m_controller;
 };
 
-} // namespace UsageStatistic::Internal
-
+} // namespace Internal
+} // namespace UsageStatistic

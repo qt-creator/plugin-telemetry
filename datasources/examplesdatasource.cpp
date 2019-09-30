@@ -105,7 +105,8 @@ void ExamplesDataSource::updateOpenedExamples()
     for (auto project : ProjectExplorer::SessionManager::projects()) {
         if (project) {
             auto projectPath = QDir::fromNativeSeparators(project->projectFilePath().toString());
-            if (auto match = re.match(projectPath); match.hasMatch()) {
+            const auto match = re.match(projectPath);
+            if (match.hasMatch()) {
                 m_examplePaths << match.captured(examplePathGroupName());
             }
         }

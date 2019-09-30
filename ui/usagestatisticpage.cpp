@@ -55,7 +55,8 @@ static void applyDataSourcesActiveStatuses(const QHash<QString, bool> &statuses,
 {
     for (auto &&ds : provider.dataSources()) {
         if (ds) {
-            if (auto it = statuses.find(ds->id()); it != std::end(statuses)) {
+            const auto it = statuses.find(ds->id());
+            if (it != std::end(statuses)) {
                 ds->setActive(*it);
             }
         }
