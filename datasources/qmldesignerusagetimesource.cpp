@@ -49,7 +49,7 @@ QmlDesignerUsageTimeSource::QmlDesignerUsageTimeSource()
     : TimeUsageSourceBase(QStringLiteral("qmlDesignerUsageTime"))
 {
     connect(Core::ModeManager::instance(), &Core::ModeManager::currentModeChanged,
-            this, [this](auto &&modeId){
+            this, [this](Core::Id modeId){
                       updateTrackingState(QString::fromUtf8(modeId.name().toLower())); });
 
     connect(Core::EditorManager::instance(), &Core::EditorManager::currentEditorChanged,

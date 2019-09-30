@@ -43,12 +43,6 @@ class ScopedSettingsGroupSetter
 public:
     ScopedSettingsGroupSetter(QSettings &settings, const std::initializer_list<QString> &prefixes);
 
-    ScopedSettingsGroupSetter(const ScopedSettingsGroupSetter &) = delete;
-    ScopedSettingsGroupSetter(ScopedSettingsGroupSetter &&) = delete;
-
-    ScopedSettingsGroupSetter &operator =(const ScopedSettingsGroupSetter &) = delete;
-    ScopedSettingsGroupSetter &operator =(ScopedSettingsGroupSetter &&) = delete;
-
     ~ScopedSettingsGroupSetter();
 
     static ScopedSettingsGroupSetter forDataSource(const KUserFeedback::AbstractDataSource &ds,
