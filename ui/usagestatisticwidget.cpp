@@ -68,9 +68,9 @@ void UsageStatisticWidget::configure()
 {
     m_controller->setFeedbackProvider(m_provider.get());
 
-    connect(ui->cbMode, qOverload<int>(&QComboBox::currentIndexChanged),
+    connect(ui->cbMode, QOverload<int>::of(&QComboBox::currentIndexChanged),
             this, &UsageStatisticWidget::updateTelemetryModeDescription);
-    connect(ui->cbMode, qOverload<int>(&QComboBox::currentIndexChanged),
+    connect(ui->cbMode, QOverload<int>::of(&QComboBox::currentIndexChanged),
             [this](int index) { preserveCurrentActiveStatuses(); updateDataSources(index); });
 
     connect(ui->lvDataSources, &QListWidget::currentItemChanged,
