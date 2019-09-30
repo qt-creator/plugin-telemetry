@@ -81,7 +81,8 @@ static bool hasEvaluationLicense(ExtensionSystem::IPlugin *plugin)
 static QString licenseString()
 {
     const auto plugins = ExtensionSystem::PluginManager::plugins();
-    if (auto it = std::find_if(plugins.begin(), plugins.end(), &isLicenseChecker); it != plugins.end()) {
+    const auto it = std::find_if(plugins.begin(), plugins.end(), &isLicenseChecker);
+    if (it != plugins.end()) {
         return hasEvaluationLicense((*it)->plugin()) ? evaluationStr: commercialStr;
     }
 

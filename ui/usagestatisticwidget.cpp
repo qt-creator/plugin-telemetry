@@ -100,7 +100,8 @@ static auto dataSourceToItem(const AbstractDataSource &ds,
     auto item = std::make_unique<QListWidgetItem>(ds.name());
 
     item->setFlags(item->flags() | Qt::ItemIsUserCheckable);
-    if (auto it = activeStatusesById.find(ds.id()); it != std::end(activeStatusesById)) {
+    const auto it = activeStatusesById.find(ds.id());
+    if (it != std::end(activeStatusesById)) {
         item->setCheckState(*it ? Qt::Checked : Qt::Unchecked);
     } else {
         item->setCheckState(Qt::Checked);

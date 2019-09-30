@@ -49,7 +49,8 @@ QNetworkRequest DataSubmitter::dataRequest() const
 {
     QNetworkRequest request(serverUrl());
 
-    if (auto versionString = makeVersionString(); !versionString.isEmpty()) {
+    const auto versionString = makeVersionString();
+    if (!versionString.isEmpty()) {
         request.setHeader(QNetworkRequest::UserAgentHeader, versionString);
     }
 
