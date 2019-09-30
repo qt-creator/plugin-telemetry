@@ -31,7 +31,8 @@
 
 #include "usagestatisticconstants.h"
 
-namespace UsageStatistic::Internal {
+namespace UsageStatistic {
+namespace Internal {
 
 using namespace KUserFeedback;
 
@@ -96,4 +97,5 @@ void EncouragementWidget::onProviderChanged(const std::shared_ptr<Provider> &p)
 
 EncouragementWidget::~EncouragementWidget() = default;
 
-} // namespace UsageStatistic::Internal
+} // namespace Internal
+} // namespace UsageStatistic

@@ -26,7 +26,9 @@
 
 #include <QtCore/QString>
 
-namespace UsageStatistic::Internal::Utils {
+namespace UsageStatistic {
+namespace Internal {
+namespace Utils {
 
 //! Secret key for authentication defined during building
 constexpr auto secret() { return USP_AUTH_KEY; }
@@ -34,4 +36,6 @@ constexpr auto secret() { return USP_AUTH_KEY; }
 //! Base server URL defined during building
 constexpr auto serverUrl() { return USP_SERVER_URL; }
 
-} // namespace UsageStatistic::Internal::Utils
+} // namespace Utils
+} // namespace Internal
+} // namespace UsageStatistic

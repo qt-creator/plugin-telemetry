@@ -37,7 +37,8 @@ QT_END_NAMESPACE
 
 namespace KUserFeedback { class Provider; }
 
-namespace UsageStatistic::Internal {
+namespace UsageStatistic {
+namespace Internal {
 
 class EncouragementWidget;
 
@@ -88,6 +89,7 @@ private: // Data
     QPointer<QWidget> m_outputPaneWidget;
 };
 
-} // namespace UsageStatistic::Internal
+} // namespace Internal
+} // namespace UsageStatistic
 
 Q_DECLARE_METATYPE(std::shared_ptr<KUserFeedback::Provider>)

@@ -30,7 +30,8 @@
 
 #include "encouragementwidget.h"
 
-namespace UsageStatistic::Internal {
+namespace UsageStatistic {
+namespace Internal {
 
 OutputPane::OutputPane() = default;
 
@@ -116,4 +117,5 @@ void OutputPane::setProvider(std::shared_ptr<KUserFeedback::Provider> provider)
     Q_EMIT providerChanged(m_provider);
 }
 
-} // namespace UsageStatistic::Internal
+} // namespace Internal
+} // namespace UsageStatistic
