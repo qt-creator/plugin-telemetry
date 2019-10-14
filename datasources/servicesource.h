@@ -24,30 +24,47 @@
 ****************************************************************************/
 #pragma once
 
-#include <QtCore/QString>
+#include <memory>
+
+#include <QtCore/QVariantMap>
+#include <QtCore/QUuid>
+
+#include <KUserFeedback/AbstractDataSource>
+#include <KUserFeedback/Provider>
 
 namespace UsageStatistic {
 namespace Internal {
-namespace Utils {
 
-//! Secret key for authentication defined during building
-constexpr auto secret() { return USP_AUTH_KEY; }
-
-//! Base server URL defined during building
-constexpr auto serverUrl() { return USP_SERVER_URL; }
-
-/*! Data scheme version for the JSON document
- *
- *  Should be changed if you change the output data format,
- *  for example, change a key or add a new data source.
- */
-struct DocumentVersion
+//! Additional technical data
+class ServiceSource : public KUserFeedback::AbstractDataSource
 {
-    int major = 1;
-    int minor = 0;
-    int patch = 0;
+    Q_DECLARE_TR_FUNCTIONS(ServiceSource)
+
+public:
+    ServiceSource(std::shared_ptr<KUserFeedback::Provider> provider);
+
+public: // AbstractDataSource interface
+    QString name() const override;
+
+    QString description() const override;
+
+    /*! The output data format is:
+     *  {
+     *      "createdAt": "2019-10-14T10:22:38",
+     *      "documentVersion": "1.0.0",
+     *      "telemetryLevel": 4,
+     *      "uuid": "049e5987-32de-487c-9e35-39b1a1380329"
+     *  }
+     */
+    QVariant data() override;
+
+    void loadImpl(QSettings *settings) override;
+    void storeImpl(QSettings *settings) override;
+
+private:
+    std::shared_ptr<KUserFeedback::Provider> m_provider;
+    QUuid m_uuid = QUuid::createUuid();
 };
 
-} // namespace Utils
-} // namespace Internal
-} // namespace UsageStatistic
+} // Internal
+} // UsageStatistic
