@@ -50,12 +50,12 @@ ModeUsageTimeSource::~ModeUsageTimeSource() = default;
 
 QString ModeUsageTimeSource::name() const
 {
-    return tr("Modes usage time");
+    return tr("Mode usage time");
 }
 
 QString ModeUsageTimeSource::description() const
 {
-    return tr("How much time a user spent working in each mode (edit, debug, design, etc.)");
+    return tr("How much time you spent working in different modes.");
 }
 
 // Keep synced with ModeUsageTimeSource::Mode {

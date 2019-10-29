@@ -83,7 +83,7 @@ QString BuildSystemSource::name() const
 
 QString BuildSystemSource::description() const
 {
-    return tr("Count of each used build systems");
+    return tr("Count of projects configured for a particular build system.");
 }
 
 QVariant BuildSystemSource::data()

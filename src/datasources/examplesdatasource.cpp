@@ -62,7 +62,7 @@ QString ExamplesDataSource::name() const
 
 QString ExamplesDataSource::description() const
 {
-    return tr("The list of examples openned by the user. "
+    return tr("The list of examples opened by you. "
               "Only example paths are collected and sent, for example: "
               "widgets/mainwindows/application/application.pro");
 }
