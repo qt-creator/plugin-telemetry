@@ -56,7 +56,7 @@ QString KitSource::name() const
 
 QString KitSource::description() const
 {
-    return tr("Kits usage statistic: compilers, debuggers, target architecture etc.");
+    return tr("Kits usage statistics: compilers, debuggers, target architecture, and so on.");
 }
 
 static QString kitsInfoKey() { return QStringLiteral("kitsInfo"); }
