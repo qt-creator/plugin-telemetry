@@ -88,7 +88,7 @@ QTC_PLUGIN_RECOMMENDS += \
 ###### End _dependencies.pri contents ######
 
 # KUserFeedback
-include(3rdparty/kuserfeedback/kuserfeedback.pri)
+include(../3rdparty/kuserfeedback/kuserfeedback.pri)
 
 include($$IDE_SOURCE_TREE/src/qtcreatorplugin.pri)
 
