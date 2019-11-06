@@ -96,5 +96,3 @@ FORMS += \
     ui/usagestatisticwidget.ui \
     ui/encouragementwidget.ui
 
-QMAKE_EXTRA_TARGETS += docs install_docs # dummy targets for consistency
-
