@@ -11,6 +11,7 @@ DEFINES += $$shell_quote(USP_SERVER_URL=\"$$(USP_SERVER_URL)\")
 
 # UsageStatistic files
 SOURCES += \
+    datasources/servicesource.cpp \
     usagestatisticplugin.cpp \
     datasources/qtclicensesource.cpp \
     datasources/buildcountsource.cpp \
@@ -28,6 +29,7 @@ SOURCES += \
     services/datasubmitter.cpp
 
 HEADERS += \
+    datasources/servicesource.h \
     usagestatisticplugin.h \
     usagestatistic_global.h \
     usagestatisticconstants.h \
@@ -88,13 +90,11 @@ QTC_PLUGIN_RECOMMENDS += \
 ###### End _dependencies.pri contents ######
 
 # KUserFeedback
-include(3rdparty/kuserfeedback/kuserfeedback.pri)
+include(../3rdparty/kuserfeedback/kuserfeedback.pri)
 
 include($$IDE_SOURCE_TREE/src/qtcreatorplugin.pri)
 
 FORMS += \
     ui/usagestatisticwidget.ui \
     ui/encouragementwidget.ui
-
-QMAKE_EXTRA_TARGETS += docs install_docs # dummy targets for consistency
 

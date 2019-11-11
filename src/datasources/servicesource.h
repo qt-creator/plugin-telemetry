@@ -24,58 +24,47 @@
 ****************************************************************************/
 #pragma once
 
-#include <array>
+#include <memory>
 
-#include <QCoreApplication>
-#include <QSet>
+#include <QtCore/QVariantMap>
+#include <QtCore/QUuid>
 
 #include <KUserFeedback/AbstractDataSource>
+#include <KUserFeedback/Provider>
 
 namespace UsageStatistic {
 namespace Internal {
 
-//! Tracks which build system is used for projects
-class BuildSystemSource : public QObject, public KUserFeedback::AbstractDataSource
+//! Additional technical data
+class ServiceSource : public KUserFeedback::AbstractDataSource
 {
-    Q_OBJECT
-
-public: // Types
-    enum BuildSystem { QMake, CMake, Qbs, Autotools, Other, Count };
+    Q_DECLARE_TR_FUNCTIONS(ServiceSource)
 
 public:
-    BuildSystemSource();
-    ~BuildSystemSource() override;
+    ServiceSource(std::shared_ptr<KUserFeedback::Provider> provider);
 
 public: // AbstractDataSource interface
     QString name() const override;
+
     QString description() const override;
 
-    /*! The output data format is (the value is projects count):
+    /*! The output data format is:
      *  {
-     *      "autotools": int,
-     *      "cmake"    : int,
-     *      "other"    : int,
-     *      "qbs"      : int,
-     *      "qmake"    : int
+     *      "createdAt": "2019-10-14T10:22:38",
+     *      "documentVersion": "1.0.0",
+     *      "telemetryLevel": 4,
+     *      "uuid": "049e5987-32de-487c-9e35-39b1a1380329"
      *  }
      */
     QVariant data() override;
 
     void loadImpl(QSettings *settings) override;
     void storeImpl(QSettings *settings) override;
-    void resetImpl(QSettings *settings) override;
 
 private:
-    void updateProjects();
-
-private:
-    // Index is build system type
-    // Element is a set of full project paths. Full project path is used
-    // as a permanent unique identifier. This identifier is only for
-    // storing locally on user machine and should never be sent!
-    using ProjectsByBuildSystem = std::array<QSet<QString>, Count>;
-    ProjectsByBuildSystem m_projectsByBuildSystem;
+    std::shared_ptr<KUserFeedback::Provider> m_provider;
+    QUuid m_uuid = QUuid::createUuid();
 };
 
-} // namespace Internal
-} // namespace UsageStatistic
+} // Internal
+} // UsageStatistic

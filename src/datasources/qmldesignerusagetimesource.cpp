@@ -60,12 +60,12 @@ QmlDesignerUsageTimeSource::~QmlDesignerUsageTimeSource() = default;
 
 QString QmlDesignerUsageTimeSource::name() const
 {
-    return tr("QmlDesigner usage time");
+    return tr("Qt Quick Designer usage time");
 }
 
 QString QmlDesignerUsageTimeSource::description() const
 {
-    return tr("How long a user spent editing QML files in designer mode");
+    return tr("How much time you spent editing QML files in Design mode.");
 }
 
 static bool isDesignMode(const QString &modeName)

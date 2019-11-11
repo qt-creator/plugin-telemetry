@@ -25,6 +25,7 @@
 #include "buildsystemsource.h"
 
 #include <QtCore/QSettings>
+#include <QtCore/QCryptographicHash>
 
 #include <projectexplorer/project.h>
 #include <projectexplorer/session.h>
@@ -83,7 +84,7 @@ QString BuildSystemSource::name() const
 
 QString BuildSystemSource::description() const
 {
-    return tr("Count of each used build systems");
+    return tr("Count of projects configured for a particular build system.");
 }
 
 QVariant BuildSystemSource::data()
@@ -96,13 +97,34 @@ QVariant BuildSystemSource::data()
     return result;
 }
 
+static QSet<QByteArray> fromVariantList(const QVariantList &vl)
+{
+    QSet<QByteArray> result;
+    for (auto &&v : vl) {
+        result << v.toByteArray();
+    }
+
+    return result;
+}
+
 void BuildSystemSource::loadImpl(QSettings *settings)
 {
     auto setter = ScopedSettingsGroupSetter::forDataSource(*this, *settings);
     for (int i = QMake; i < Count; ++i) {
         m_projectsByBuildSystem[size_t(i)] =
-            settings->value(buildSystemKeys()[i]).toStringList().toSet();
+            fromVariantList(settings->value(buildSystemKeys()[i]).toList());
     }
+}
+
+static QVariantList toVariantList(const QSet<QByteArray> &set)
+{
+    QVariantList result;
+    result.reserve(set.size());
+
+    std::transform(set.begin(), set.end(), std::back_inserter(result),
+                   [](const QByteArray &ba) { return QVariant::fromValue(ba); });
+
+    return result;
 }
 
 void BuildSystemSource::storeImpl(QSettings *settings)
@@ -110,7 +132,7 @@ void BuildSystemSource::storeImpl(QSettings *settings)
     auto setter = ScopedSettingsGroupSetter::forDataSource(*this, *settings);
     for (int i = QMake; i < Count; ++i) {
         settings->setValue(
-            buildSystemKeys()[i], QStringList(m_projectsByBuildSystem[size_t(i)].toList()));
+            buildSystemKeys()[i], toVariantList(m_projectsByBuildSystem[size_t(i)]));
     }
 }
 
@@ -120,13 +142,18 @@ void BuildSystemSource::resetImpl(QSettings *settings)
     storeImpl(settings);
 }
 
+static QByteArray hashPath(const Utils::FilePath& name)
+{
+    return QCryptographicHash::hash(name.toString().toUtf8(), QCryptographicHash::Md5);
+}
+
 void BuildSystemSource::updateProjects()
 {
     for (auto project : ProjectExplorer::SessionManager::projects()) {
         if (project) {
-            auto projectName = QString::fromUtf8(project->id().name()).toLower();
-            auto projectPath = project->projectFilePath().toString();
-            m_projectsByBuildSystem[extractBuildSystemType(projectName)] << projectPath;
+            const auto projectName = QString::fromUtf8(project->id().name()).toLower();
+            const auto projectPath = project->projectFilePath();
+            m_projectsByBuildSystem[extractBuildSystemType(projectName)] << hashPath(projectPath);
         }
     }
 }

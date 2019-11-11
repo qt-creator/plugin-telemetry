@@ -53,6 +53,7 @@
 #include "datasources/examplesdatasource.h"
 #include "datasources/kitsource.h"
 #include "datasources/qmldesignerusagetimesource.h"
+#include "datasources/servicesource.h"
 
 #include "services/datasubmitter.h"
 
@@ -110,6 +111,13 @@ static void addQtCreatorDataSources(KUserFeedback::Provider &provider)
     provider.addDataSource(new QmlDesignerUsageTimeSource);
 }
 
+static void addServiceDataSource(const std::shared_ptr<KUserFeedback::Provider> &provider)
+{
+    if (provider) {
+        provider->addDataSource(new ServiceSource(provider));
+    }
+}
+
 bool UsageStatisticPlugin::delayedInitialize()
 {
     // We should create the provider only after everything else
@@ -118,6 +126,7 @@ bool UsageStatisticPlugin::delayedInitialize()
 
     addDefaultDataSources(*m_provider);
     addQtCreatorDataSources(*m_provider);
+    addServiceDataSource(m_provider);
 
     createUsageStatisticPage();
 

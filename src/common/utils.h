@@ -36,6 +36,18 @@ constexpr auto secret() { return USP_AUTH_KEY; }
 //! Base server URL defined during building
 constexpr auto serverUrl() { return USP_SERVER_URL; }
 
+/*! Data scheme version for the JSON document
+ *
+ *  Should be changed if you change the output data format,
+ *  for example, change a key or add a new data source.
+ */
+struct DocumentVersion
+{
+    int major = 1;
+    int minor = 0;
+    int patch = 0;
+};
+
 } // namespace Utils
 } // namespace Internal
 } // namespace UsageStatistic
