@@ -73,7 +73,7 @@ private:
     // Element is a set of full project paths. Full project path is used
     // as a permanent unique identifier. This identifier is only for
     // storing locally on user machine and should never be sent!
-    using ProjectsByBuildSystem = std::array<QSet<QString>, Count>;
+    using ProjectsByBuildSystem = std::array<QSet<QByteArray>, Count>;
     ProjectsByBuildSystem m_projectsByBuildSystem;
 };
 

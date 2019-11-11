@@ -11,6 +11,7 @@ DEFINES += $$shell_quote(USP_SERVER_URL=\"$$(USP_SERVER_URL)\")
 
 # UsageStatistic files
 SOURCES += \
+    datasources/servicesource.cpp \
     usagestatisticplugin.cpp \
     datasources/qtclicensesource.cpp \
     datasources/buildcountsource.cpp \
@@ -28,6 +29,7 @@ SOURCES += \
     services/datasubmitter.cpp
 
 HEADERS += \
+    datasources/servicesource.h \
     usagestatisticplugin.h \
     usagestatistic_global.h \
     usagestatisticconstants.h \
