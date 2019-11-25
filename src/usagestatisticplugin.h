@@ -60,6 +60,8 @@ private:
     void storeSettings();
     void restoreSettings();
     void createProvider();
+    void showEncouragementMessage();
+    void showFirstTimeMessage();
 
 private:
     std::shared_ptr<KUserFeedback::Provider> m_provider;

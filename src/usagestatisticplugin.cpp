@@ -134,6 +134,8 @@ bool UsageStatisticPlugin::delayedInitialize()
 
     configureOutputPane();
 
+    showFirstTimeMessage();
+
     return true;
 }
 
@@ -164,7 +166,7 @@ void UsageStatisticPlugin::configureOutputPane()
     m_outputPane->setProvider(m_provider);
 
     connect(m_provider.get(), &KUserFeedback::Provider::showEncouragementMessage,
-            m_outputPane.get(), &OutputPane::flash);
+            this, &UsageStatisticPlugin::showEncouragementMessage);
 }
 
 void UsageStatisticPlugin::storeSettings()
@@ -198,6 +200,36 @@ void UsageStatisticPlugin::createProvider()
     m_provider->setEncouragementInterval(encouragementIntervalDays());
 
     m_provider->setSubmissionInterval(submissionIntervalDays());
+}
+
+static bool runFirstTime(const KUserFeedback::Provider &provider)
+{
+    static const auto startCountSourceId = QStringLiteral("startCount");
+    if (auto startCountSource = provider.dataSource(startCountSourceId)) {
+        auto data = startCountSource->data().toMap();
+
+        static const auto startCountKey = QStringLiteral("value");
+        const auto startCountIt = data.find(startCountKey);
+        if (startCountIt != data.end()) {
+            return startCountIt->toInt() == 1;
+        }
+    }
+
+    return false;
+}
+
+void UsageStatisticPlugin::showFirstTimeMessage()
+{
+    if (m_provider && runFirstTime(*m_provider)) {
+        showEncouragementMessage();
+    }
+}
+
+void UsageStatisticPlugin::showEncouragementMessage()
+{
+    if (m_outputPane) {
+        m_outputPane->flash();
+    }
 }
 
 } // namespace Internal
