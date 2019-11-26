@@ -37,5 +37,7 @@ static constexpr char USAGE_STATISTIC_PAGE_ID[] = "UsageStatistic";
 
 static constexpr char PRIVACY_POLICY_URL[] = "https://www.qt.io/terms-conditions/#privacy";
 
+static constexpr char ENC_MSG_INFOBAR_ENTRY_ID[] = "UsageStatisticPlugin_EncMsg_InfoBarEntry_Id";
+
 } // namespace UsageStatistic
 } // namespace Constants

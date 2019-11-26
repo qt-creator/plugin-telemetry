@@ -36,7 +36,6 @@ namespace UsageStatistic {
 namespace Internal {
 
 class UsageStatisticPage;
-class OutputPane;
 
 //! Plugin for collecting and sending usage statistics
 class UsageStatisticPlugin : public ExtensionSystem::IPlugin
@@ -55,8 +54,6 @@ public:
 
 private:
     void createUsageStatisticPage();
-    void createOutputPane();
-    void configureOutputPane();
     void storeSettings();
     void restoreSettings();
     void createProvider();
@@ -66,7 +63,6 @@ private:
 private:
     std::shared_ptr<KUserFeedback::Provider> m_provider;
     std::unique_ptr<UsageStatisticPage> m_usageStatisticPage;
-    std::unique_ptr<OutputPane> m_outputPane;
 };
 
 } // namespace Internal
