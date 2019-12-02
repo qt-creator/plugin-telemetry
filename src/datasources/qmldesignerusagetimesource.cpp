@@ -76,7 +76,7 @@ static bool isDesignMode(const QString &modeName)
 
 static bool editingQmlFile()
 {
-    static const QList<QString> validExtentions = {"qml", "qml.ui"};
+    static const QList<QString> validExtentions = {"qml", "ui.qml"};
     static const QString validMimeType = "qml";
 
     if (auto document = Core::EditorManager::currentDocument()) {
