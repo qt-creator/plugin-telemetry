@@ -24,8 +24,6 @@ SOURCES += \
     datasources/qmldesignerusagetimesource.cpp \
     ui/usagestatisticpage.cpp \
     ui/usagestatisticwidget.cpp \
-    ui/outputpane.cpp \
-    ui/encouragementwidget.cpp \
     services/datasubmitter.cpp
 
 HEADERS += \
@@ -44,8 +42,6 @@ HEADERS += \
     datasources/qmldesignerusagetimesource.h \
     ui/usagestatisticpage.h \
     ui/usagestatisticwidget.h \
-    ui/outputpane.h \
-    ui/encouragementwidget.h \
     services/datasubmitter.h \
     common/utils.h
 

@@ -31,6 +31,7 @@
 #include <coreplugin/actionmanager/command.h>
 #include <coreplugin/actionmanager/actioncontainer.h>
 #include <coreplugin/coreconstants.h>
+#include <coreplugin/infobar.h>
 
 #include <KUserFeedback/Provider>
 #include <KUserFeedback/ApplicationVersionSource>
@@ -58,7 +59,6 @@
 #include "services/datasubmitter.h"
 
 #include "ui/usagestatisticpage.h"
-#include "ui/outputpane.h"
 
 #include "common/utils.h"
 
@@ -73,9 +73,6 @@ bool UsageStatisticPlugin::initialize(const QStringList &arguments, QString *err
 {
     Q_UNUSED(arguments)
     Q_UNUSED(errorString)
-
-    // We have to create a pane here because of OutputPaneManager internal initialization order
-    createOutputPane();
 
     return true;
 }
@@ -132,7 +129,7 @@ bool UsageStatisticPlugin::delayedInitialize()
 
     restoreSettings();
 
-    configureOutputPane();
+    showFirstTimeMessage();
 
     return true;
 }
@@ -150,21 +147,6 @@ void UsageStatisticPlugin::createUsageStatisticPage()
 
     connect(m_usageStatisticPage.get(), &UsageStatisticPage::settingsChanged,
             this, &UsageStatisticPlugin::storeSettings);
-}
-
-void UsageStatisticPlugin::createOutputPane()
-{
-    m_outputPane = std::make_unique<OutputPane>();
-}
-
-void UsageStatisticPlugin::configureOutputPane()
-{
-    Q_ASSERT(m_outputPane);
-
-    m_outputPane->setProvider(m_provider);
-
-    connect(m_provider.get(), &KUserFeedback::Provider::showEncouragementMessage,
-            m_outputPane.get(), &OutputPane::flash);
 }
 
 void UsageStatisticPlugin::storeSettings()
@@ -198,6 +180,69 @@ void UsageStatisticPlugin::createProvider()
     m_provider->setEncouragementInterval(encouragementIntervalDays());
 
     m_provider->setSubmissionInterval(submissionIntervalDays());
+}
+
+static bool runFirstTime(const KUserFeedback::Provider &provider)
+{
+    static const auto startCountSourceId = QStringLiteral("startCount");
+    if (auto startCountSource = provider.dataSource(startCountSourceId)) {
+        auto data = startCountSource->data().toMap();
+
+        static const auto startCountKey = QStringLiteral("value");
+        const auto startCountIt = data.find(startCountKey);
+        if (startCountIt != data.end()) {
+            return startCountIt->toInt() == 1;
+        }
+    }
+
+    return false;
+}
+
+static bool telemetryLevelNotSet(const KUserFeedback::Provider &provider)
+{
+    return provider.telemetryMode() == KUserFeedback::Provider::NoTelemetry;
+}
+
+void UsageStatisticPlugin::showFirstTimeMessage()
+{
+    if (m_provider && runFirstTime(*m_provider) && telemetryLevelNotSet(*m_provider)) {
+        showEncouragementMessage();
+    }
+}
+
+static Core::InfoBarEntry makeInfoBarEntry()
+{
+    static auto infoText = UsageStatisticPlugin::tr(
+        "We make Qt Creator for you. Would you like to help us make it even better?");
+    static auto customButtonInfoText = UsageStatisticPlugin::tr("Adjust usage statistics settings");
+    static auto cancelButtonInfoText = UsageStatisticPlugin::tr("Decide later");
+
+    static auto hideEncouragementMessageCallback = []() {
+        if (auto infoBar = Core::ICore::infoBar()) {
+            infoBar->removeInfo(Constants::ENC_MSG_INFOBAR_ENTRY_ID);
+        }
+    };
+
+    static auto showUsageStatisticsSettingsCallback = []() {
+        hideEncouragementMessageCallback();
+        Core::ICore::showOptionsDialog(Constants::USAGE_STATISTIC_PAGE_ID);
+    };
+
+    Core::InfoBarEntry entry(Constants::ENC_MSG_INFOBAR_ENTRY_ID, infoText);
+    entry.setCustomButtonInfo(customButtonInfoText, showUsageStatisticsSettingsCallback);
+    entry.setCancelButtonInfo(cancelButtonInfoText, hideEncouragementMessageCallback);
+
+    return entry;
+}
+
+void UsageStatisticPlugin::showEncouragementMessage()
+{
+    if (auto infoBar = Core::ICore::infoBar()) {
+        if (!infoBar->containsInfo(Constants::ENC_MSG_INFOBAR_ENTRY_ID)) {
+            static auto infoBarEntry = makeInfoBarEntry();
+            infoBar->addInfo(infoBarEntry);
+        }
+    }
 }
 
 } // namespace Internal
