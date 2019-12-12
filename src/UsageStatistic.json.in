@@ -5,7 +5,7 @@
     \"Vendor\" : \"The Qt Company Ltd\",
     \"Copyright\" : \"(C) $$QTCREATOR_COPYRIGHT_YEAR The Qt Company Ltd\",
     \"License\" : \"GNU GPL v3\",
-    \"Description\" : \"This plugin collects statistics on how Qt Creator is used. All statistics are anonymous. You can switch off the plugin any time you want.\",
+    \"Description\" : \"This plugin collects statistics on how Qt Creator is used. All statistics are pseudonymous. You can switch off the plugin any time you want.\",
     \"Url\" : \"https://www.qt.io/\",
     $$dependencyList
 }
