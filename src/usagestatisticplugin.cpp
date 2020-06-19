@@ -31,7 +31,7 @@
 #include <coreplugin/actionmanager/command.h>
 #include <coreplugin/actionmanager/actioncontainer.h>
 #include <coreplugin/coreconstants.h>
-#include <coreplugin/infobar.h>
+#include <utils/infobar.h>
 
 #include <KUserFeedback/Provider>
 #include <KUserFeedback/ApplicationVersionSource>
@@ -210,7 +210,7 @@ void UsageStatisticPlugin::showFirstTimeMessage()
     }
 }
 
-static Core::InfoBarEntry makeInfoBarEntry()
+static ::Utils::InfoBarEntry makeInfoBarEntry()
 {
     static auto infoText = UsageStatisticPlugin::tr(
         "We make Qt Creator for you. Would you like to help us make it even better?");
@@ -228,7 +228,7 @@ static Core::InfoBarEntry makeInfoBarEntry()
         Core::ICore::showOptionsDialog(Constants::USAGE_STATISTIC_PAGE_ID);
     };
 
-    Core::InfoBarEntry entry(Constants::ENC_MSG_INFOBAR_ENTRY_ID, infoText);
+    ::Utils::InfoBarEntry entry(Constants::ENC_MSG_INFOBAR_ENTRY_ID, infoText);
     entry.setCustomButtonInfo(customButtonInfoText, showUsageStatisticsSettingsCallback);
     entry.setCancelButtonInfo(cancelButtonInfoText, hideEncouragementMessageCallback);
 
