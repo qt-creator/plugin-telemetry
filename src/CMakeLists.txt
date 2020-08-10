@@ -5,7 +5,7 @@ project(UsageStatistic)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 
 find_package(QtCreator COMPONENTS Core TextEditor ProjectExplorer VcsBase REQUIRED)
 find_package(Qt5 COMPONENTS Widgets REQUIRED)
