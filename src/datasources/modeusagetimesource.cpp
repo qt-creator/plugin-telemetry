@@ -122,7 +122,7 @@ ModeUsageTimeSource::Mode ModeUsageTimeSource::currentMode() const
     return m_currentMode;
 }
 
-void ModeUsageTimeSource::onCurrentModeIdChanged(const Core::Id &modeId)
+void ModeUsageTimeSource::onCurrentModeIdChanged(const Utils::Id &modeId)
 {
     auto mode = modeFromString(QString::fromUtf8(modeId.name().toLower().simplified()));
 

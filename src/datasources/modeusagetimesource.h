@@ -28,7 +28,7 @@
 
 #include <QtCore/QElapsedTimer>
 
-#include <coreplugin/id.h>
+#include <utils/id.h>
 
 #include <KUserFeedback/AbstractDataSource>
 
@@ -79,7 +79,7 @@ private: // Methods
     void setCurrentMode(Mode mode);
     Mode currentMode() const;
 
-    void onCurrentModeIdChanged(const Core::Id &modeId);
+    void onCurrentModeIdChanged(const Utils::Id &modeId);
 
     void storeCurrentTimerValue();
 
