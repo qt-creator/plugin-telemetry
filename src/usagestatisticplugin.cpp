@@ -54,6 +54,7 @@
 #include "datasources/examplesdatasource.h"
 #include "datasources/kitsource.h"
 #include "datasources/qmldesignerusagetimesource.h"
+#include "datasources/qmldesignerusageeventsource.h"
 #include "datasources/servicesource.h"
 
 #include "services/datasubmitter.h"
@@ -106,6 +107,7 @@ static void addQtCreatorDataSources(KUserFeedback::Provider &provider)
     provider.addDataSource(new ExamplesDataSource);
     provider.addDataSource(new KitSource);
     provider.addDataSource(new QmlDesignerUsageTimeSource);
+    provider.addDataSource(new QmlDesignerUsageEventSource);
 }
 
 static void addServiceDataSource(const std::shared_ptr<KUserFeedback::Provider> &provider)
