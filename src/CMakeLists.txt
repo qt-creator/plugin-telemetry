@@ -26,6 +26,7 @@ add_qtc_plugin(UsageStatistic
         datasources/examplesdatasource.cpp
         datasources/kitsource.cpp
         datasources/qmldesignerusagetimesource.cpp
+        datasources/qmldesignerusageeventsource.cpp
         datasources/servicesource.cpp
         ui/usagestatisticpage.cpp
         ui/usagestatisticwidget.cpp

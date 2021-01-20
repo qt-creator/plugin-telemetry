@@ -22,6 +22,7 @@ SOURCES += \
     datasources/examplesdatasource.cpp \
     datasources/kitsource.cpp \
     datasources/qmldesignerusagetimesource.cpp \
+    datasources/qmldesignerusageeventsource.cpp \
     ui/usagestatisticpage.cpp \
     ui/usagestatisticwidget.cpp \
     services/datasubmitter.cpp
@@ -40,6 +41,7 @@ HEADERS += \
     datasources/examplesdatasource.h \
     datasources/kitsource.h \
     datasources/qmldesignerusagetimesource.h \
+    datasources/qmldesignerusageeventsource.h \
     ui/usagestatisticpage.h \
     ui/usagestatisticwidget.h \
     services/datasubmitter.h \
