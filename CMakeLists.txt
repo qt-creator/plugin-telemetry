@@ -62,4 +62,5 @@ ExternalProject_Add(plugin
         -DQtCreator_BINARY_DIR:PATH=${QtCreator_BINARY_DIR}
         -DQTC_MERGE_BINARY_DIR:BOOL=${QTC_MERGE_BINARY_DIR}
     DEPENDS kuserfeedback
+    BUILD_ALWAYS ON
 )
