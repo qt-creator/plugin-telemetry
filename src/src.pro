@@ -1,5 +1,7 @@
 DEFINES += USAGESTATISTIC_LIBRARY
 
+QT += quickwidgets
+
 INCLUDEPATH *= "$${PWD}"
 
 CONFIG += c++1z

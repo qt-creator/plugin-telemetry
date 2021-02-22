@@ -30,6 +30,7 @@
 #include <extensionsystem/iplugin.h>
 #include <extensionsystem/pluginmanager.h>
 #include <extensionsystem/pluginspec.h>
+#include <QtQuick/QQuickItem>
 
 #include <KUserFeedback/Provider>
 
@@ -48,6 +49,11 @@ static bool isQmlDesigner(const ExtensionSystem::PluginSpec *spec)
 
 const char qmlDesignerEventsKey[] = "qmlDesignerEvents";
 const char qmlDesignerTimesKey[] = "qmlDesignerTimes";
+
+// For feedback popup
+const char qmlDesignerFeedbackTextKey[] = "qmlDesignerFeedbackTextKey";
+const char qmlDesignerFeedbackRatingKey[] = "qmlDesignerFeedbackRatingKey";
+const char qmlDesignerFeedbackPoppedKey[] = "qmlDesignerFeedbackPoppedKey";
 
 QmlDesignerUsageEventSource::QmlDesignerUsageEventSource()
     : KUserFeedback::AbstractDataSource("qmlDesignerUsageEvents", Provider::DetailedUsageStatistics)
@@ -77,6 +83,43 @@ QString QmlDesignerUsageEventSource::description() const
     return tr("What views and actions are used in QML Design mode.");
 }
 
+void QmlDesignerUsageEventSource::closeFeedbackPopup()
+{
+    m_feedbackWidget->deleteLater();
+}
+
+void QmlDesignerUsageEventSource::insertFeedback(const QString &feedback, int rating)
+{
+    if (!feedback.isEmpty())
+        m_feedbackTextData.insert(currentIdentifier, feedback);
+
+    m_feedbackRatingData.insert(currentIdentifier, rating);
+}
+
+void QmlDesignerUsageEventSource::launchPopup(const QString &identifier)
+{
+    currentIdentifier = identifier;
+
+    if (!m_feedbackWidget) {
+        m_feedbackWidget = new QQuickWidget(Core::ICore::dialogParent());
+        m_feedbackWidget->setSource(QUrl("qrc:/usagestatistic/ui/FeedbackPopup.qml"));
+        m_feedbackWidget->setWindowModality(Qt::ApplicationModal);
+        m_feedbackWidget->setWindowFlags(Qt::SplashScreen);
+        m_feedbackWidget->setAttribute(Qt::WA_DeleteOnClose);
+
+        QQuickItem *root = m_feedbackWidget->rootObject();
+        QObject *title = root->findChild<QObject *>("title");
+        QString name = tr("Enjoying %1?").arg(identifier);
+        title->setProperty("text", name);
+
+        QObject::connect(root, SIGNAL(submitFeedback(QString, int)),
+                         this, SLOT(insertFeedback(const QString, int)));
+        QObject::connect(root, SIGNAL(closeClicked()), this, SLOT(closeFeedbackPopup()));
+    }
+
+    m_feedbackWidget->show();
+}
+
 void QmlDesignerUsageEventSource::handleUsageStatisticsNotifier(const QString &identifier)
 {
     auto it = m_eventData.find(identifier);
@@ -91,15 +134,28 @@ void QmlDesignerUsageEventSource::handleUsageStatisticsUsageTimer(const QString 
 {
     auto it = m_timeData.find(identifier);
 
-    if (it != m_timeData.end())
+    if (it != m_timeData.end()) {
         it.value() = it.value().toInt() + elapsed;
-    else
+
+        // Show the user feedback prompt after time limit is passed
+        static const QSet<QString> supportedViews {"Form Editor", "3D Editor", "Timeline",
+                                                   "Transition Editor", "Curve Editor"};
+        static const int timeLimit = 864'000'000; // 10 days
+        if (supportedViews.contains(identifier) && !m_feedbackPoppedData[identifier].toBool()
+                && m_timeData.value(identifier).toInt() >= timeLimit) {
+            launchPopup(identifier);
+            m_feedbackPoppedData[identifier] = QVariant(true);
+        }
+    } else {
         m_timeData.insert(identifier, elapsed);
+    }
 }
 
 QVariant QmlDesignerUsageEventSource::data()
 {
-    return QVariantMap{{qmlDesignerEventsKey, m_eventData}, {qmlDesignerTimesKey, m_timeData}};
+    return QVariantMap{{qmlDesignerEventsKey, m_eventData}, {qmlDesignerTimesKey, m_timeData},
+           {qmlDesignerFeedbackTextKey, m_feedbackTextData}, {qmlDesignerFeedbackRatingKey, m_feedbackRatingData},
+           {qmlDesignerFeedbackPoppedKey, m_feedbackPoppedData}};
 }
 
 void QmlDesignerUsageEventSource::loadImpl(QSettings *settings)
@@ -107,6 +163,9 @@ void QmlDesignerUsageEventSource::loadImpl(QSettings *settings)
     auto setter = ScopedSettingsGroupSetter::forDataSource(*this, *settings);
     m_eventData = settings->value(qmlDesignerEventsKey).toMap();
     m_timeData = settings->value(qmlDesignerTimesKey).toMap();
+    m_feedbackTextData = settings->value(qmlDesignerFeedbackTextKey).toHash();
+    m_feedbackRatingData = settings->value(qmlDesignerFeedbackRatingKey).toHash();
+    m_feedbackPoppedData = settings->value(qmlDesignerFeedbackPoppedKey).toHash();
 }
 
 void QmlDesignerUsageEventSource::storeImpl(QSettings *settings)
@@ -114,6 +173,9 @@ void QmlDesignerUsageEventSource::storeImpl(QSettings *settings)
     auto setter = ScopedSettingsGroupSetter::forDataSource(*this, *settings);
     settings->setValue(qmlDesignerEventsKey, m_eventData);
     settings->setValue(qmlDesignerTimesKey, m_timeData);
+    settings->setValue(qmlDesignerFeedbackTextKey, m_feedbackTextData);
+    settings->setValue(qmlDesignerFeedbackRatingKey, m_feedbackRatingData);
+    settings->setValue(qmlDesignerFeedbackPoppedKey, m_feedbackPoppedData);
 }
 
 void QmlDesignerUsageEventSource::resetImpl(QSettings *settings)
