@@ -61,6 +61,6 @@ ExternalProject_Add(plugin
         -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}
         -DQtCreator_BINARY_DIR:PATH=${QtCreator_BINARY_DIR}
         -DQTC_MERGE_BINARY_DIR:BOOL=${QTC_MERGE_BINARY_DIR}
-    DEPENDS kuserfeedback
+    DEPENDS kuserfeedback QtCreator::Core QtCreator::Debugger QtCreator::ProjectExplorer QtCreator::QtSupport
     BUILD_ALWAYS ON
 )
