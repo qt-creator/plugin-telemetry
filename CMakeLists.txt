@@ -49,6 +49,8 @@ if(NOT DEFINED USP_SERVER_URL OR NOT DEFINED USP_AUTH_KEY)
 Define both USP_SERVER_URL and USP_AUTH_KEY to enable data submission")
 endif()
 
+find_package(QtCreator COMPONENTS Core Debugger ProjectExplorer QtSupport QUIET)
+
 ExternalProject_Add(plugin
     PREFIX plugin
     SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src"
