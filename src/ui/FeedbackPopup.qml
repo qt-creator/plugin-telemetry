@@ -31,7 +31,7 @@ import QtQuick.Window 2.15
 Rectangle {
     id: root_rectangle
 
-    property int rating: 1
+    property int rating: 0
 
     signal submitFeedback(string feedback, int rating)
     signal closeClicked()
@@ -115,21 +115,18 @@ Rectangle {
             height: 28
 
             contentItem: Text {
-                id: bskip_text
                 text: "Skip"
-                color: "#999999"
+                color: parent.hovered ? Qt.darker("#999999", 1.9) : Qt.darker("#999999", 1.2)
                 font { family: "Titillium"; pixelSize: 14 }
                 horizontalAlignment: Text.AlignHCenter
             }
 
             background: Rectangle {
-                id: bskip_bg
                 anchors.fill: parent
                 color: "#ffffff"
                 border { color: "#999999"; width: 1 }
             }
 
-            onHoveredChanged: bskip_text.color = hovered ? "#666666" : "#999999"
             onClicked: root_rectangle.closeClicked()
         }
 
@@ -138,23 +135,21 @@ Rectangle {
 
             width: 80
             height: 28
+            enabled: rating > 0
 
             contentItem: Text {
-                id: bsub_text
                 text: "Submit";
-                color: "white"
+                color: enabled ? "white" : Qt.lighter("#999999", 1.3)
                 font { family: "Titillium"; pixelSize: 14 }
                 horizontalAlignment: Text.AlignHCenter
             }
 
             background: Rectangle {
-                id: bsub_bg
                 anchors.fill: parent
-                color: "#0094ce"
-                border { color: "#999999"; width: 1 }
+                color: enabled ? parent.hovered ? Qt.lighter("#0094ce", 1.2) : "#0094ce" : "white"
+                border { color: enabled ? "#999999" : Qt.lighter("#999999", 1.3); width: 1 }
             }
 
-            onHoveredChanged: bsub_bg.color = hovered ? Qt.lighter("#0094ce", 1.2) : "#0094ce"
             onClicked: {
                 root_rectangle.submitFeedback(textarea.text, rating);
                 root_rectangle.closeClicked();
