@@ -26,7 +26,9 @@
 
 #include <KUserFeedback/AbstractDataSource>
 
+#include <QHash>
 #include <QMap>
+#include <QQuickWidget>
 
 namespace UsageStatistic {
 namespace Internal {
@@ -41,6 +43,7 @@ public:
 public:
     QString name() const override;
     QString description() const override;
+    QString currentIdentifier; // feedback popup
 
     QVariant data() override;
 
@@ -48,13 +51,23 @@ public:
     void storeImpl(QSettings *settings) override;
     void resetImpl(QSettings *settings) override;
 
+    void launchPopup(const QString &identifier); // launch user feedback popup
+
 public slots:
     void handleUsageStatisticsNotifier(const QString &identifier);
     void handleUsageStatisticsUsageTimer(const QString &identifier, int elapsed);
+    void insertFeedback(const QString &feedback, int rating);
+    void closeFeedbackPopup();
 
 private:
     QMap<QString, QVariant> m_eventData;
     QMap<QString, QVariant> m_timeData;
+
+    // user feedback data
+    QHash<QString, QVariant> m_feedbackTextData;
+    QHash<QString, QVariant> m_feedbackRatingData;
+    QHash<QString, QVariant> m_feedbackPoppedData;
+    QPointer<QQuickWidget> m_feedbackWidget;
 };
 
 } // namespace Internal

@@ -2,5 +2,10 @@
     <qresource prefix="/usagestatistic">
         <file>images/settingscategory_usagestatistic.png</file>
         <file>images/settingscategory_usagestatistic@2x.png</file>
+        <file>images/star_empty.png</file>
+        <file>images/star_empty@2x.png</file>
+        <file>images/star_filled.png</file>
+        <file>images/star_filled@2x.png</file>
+        <file>ui/FeedbackPopup.qml</file>
     </qresource>
 </RCC>

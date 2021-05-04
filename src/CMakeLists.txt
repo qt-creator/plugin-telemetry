@@ -14,7 +14,7 @@ find_package(KUserFeedback REQUIRED)
 add_qtc_plugin(UsageStatistic
     PLUGIN_DEPENDS
         QtCreator::Core QtCreator::Debugger QtCreator::ProjectExplorer QtCreator::QtSupport
-    DEPENDS Qt5::Widgets QtCreator::ExtensionSystem QtCreator::Utils KUserFeedbackCore KUserFeedbackWidgets
+    DEPENDS Qt5::Widgets Qt5::QuickWidgets QtCreator::ExtensionSystem QtCreator::Utils KUserFeedbackCore KUserFeedbackWidgets
     SOURCES
         usagestatisticplugin.cpp
         datasources/qtclicensesource.cpp

@@ -49,6 +49,8 @@ if(NOT DEFINED USP_SERVER_URL OR NOT DEFINED USP_AUTH_KEY)
 Define both USP_SERVER_URL and USP_AUTH_KEY to enable data submission")
 endif()
 
+find_package(QtCreator COMPONENTS Core Debugger ProjectExplorer QtSupport QUIET)
+
 ExternalProject_Add(plugin
     PREFIX plugin
     SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src"
@@ -61,6 +63,6 @@ ExternalProject_Add(plugin
         -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}
         -DQtCreator_BINARY_DIR:PATH=${QtCreator_BINARY_DIR}
         -DQTC_MERGE_BINARY_DIR:BOOL=${QTC_MERGE_BINARY_DIR}
-    DEPENDS kuserfeedback
+    DEPENDS kuserfeedback QtCreator::Core QtCreator::Debugger QtCreator::ProjectExplorer QtCreator::QtSupport
     BUILD_ALWAYS ON
 )
