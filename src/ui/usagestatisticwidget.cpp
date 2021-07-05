@@ -192,7 +192,7 @@ void UsageStatisticWidget::addPrivacyPolicyLink()
 {
     const auto currentText = ui->lblPrivacyPolicy->text();
     const auto linkTemplate = QString("<a href=\"%1\">%2<\\a>");
-    ui->lblPrivacyPolicy->setText(linkTemplate.arg(Constants::PRIVACY_POLICY_URL, currentText));
+    ui->lblPrivacyPolicy->setText(linkTemplate.arg(QLatin1String(Constants::PRIVACY_POLICY_URL), currentText));
 
     const auto tooltipTemplate = tr("Open %1");
     ui->lblPrivacyPolicy->setToolTip(tooltipTemplate.arg(Constants::PRIVACY_POLICY_URL));
