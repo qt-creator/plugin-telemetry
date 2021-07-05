@@ -41,6 +41,7 @@ ExternalProject_Add(kuserfeedback
         -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
         -DCMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH_ALT_SEP}
         -DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/kuserfeedback
+    BUILD_ALWAYS ON
     DEPENDS extra-cmake-modules
 )
 
