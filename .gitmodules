@@ -1,6 +1,6 @@
 [submodule "3rdparty/kuserfeedback"]
 	path = 3rdparty/kuserfeedback
-	url = https://git.qt.io/aportale/kuserfeedback.git
+	url = https://invent.kde.org/kkoehne/kuserfeedback.git
 [submodule "3rdparty/extra-cmake-modules"]
 	path = 3rdparty/extra-cmake-modules
 	url = https://github.com/KDE/extra-cmake-modules.git
