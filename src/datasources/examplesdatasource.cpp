@@ -71,19 +71,19 @@ static QString examplesKey() { return QStringLiteral("examples"); }
 
 QVariant ExamplesDataSource::data()
 {
-    return QVariantMap{{examplesKey(), QVariant(m_examplePaths.toList())}};
+    return QVariantMap{{examplesKey(), QVariant(m_examplePaths)}};
 }
 
 void ExamplesDataSource::loadImpl(QSettings *settings)
 {
     auto setter = ScopedSettingsGroupSetter::forDataSource(*this, *settings);
-    m_examplePaths = settings->value(examplesKey()).toStringList().toSet();
+    m_examplePaths = settings->value(examplesKey()).toStringList();
 }
 
 void ExamplesDataSource::storeImpl(QSettings *settings)
 {
     auto setter = ScopedSettingsGroupSetter::forDataSource(*this, *settings);
-    settings->setValue(examplesKey(), QStringList(m_examplePaths.toList()));
+    settings->setValue(examplesKey(), QStringList(m_examplePaths));
 }
 
 void ExamplesDataSource::resetImpl(QSettings *settings)
@@ -107,7 +107,9 @@ void ExamplesDataSource::updateOpenedExamples()
             auto projectPath = QDir::fromNativeSeparators(project->projectFilePath().toString());
             const auto match = re.match(projectPath);
             if (match.hasMatch()) {
-                m_examplePaths << match.captured(examplePathGroupName());
+                QString sanitizedPath = match.captured(examplePathGroupName());
+                if (!m_examplePaths.contains(sanitizedPath))
+                    m_examplePaths.append(sanitizedPath);
             }
         }
     }
