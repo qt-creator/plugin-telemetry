@@ -62,7 +62,7 @@ private: // Methods
     void updateOpenedExamples();
 
 private: // Data
-    QSet<QString> m_examplePaths;
+    QList<QString> m_examplePaths;
 };
 
 } // namespace Internal

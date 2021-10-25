@@ -25,6 +25,8 @@
 #include "usagestatisticplugin.h"
 #include "usagestatisticconstants.h"
 
+#include <app/app_version.h>
+
 #include <coreplugin/icore.h>
 #include <coreplugin/icontext.h>
 #include <coreplugin/actionmanager/actionmanager.h>
@@ -215,7 +217,8 @@ void UsageStatisticPlugin::showFirstTimeMessage()
 static ::Utils::InfoBarEntry makeInfoBarEntry()
 {
     static auto infoText = UsageStatisticPlugin::tr(
-        "We make Qt Creator for you. Would you like to help us make it even better?");
+                               "We make %1 for you. Would you like to help us make it even better?")
+                               .arg(Core::Constants::IDE_DISPLAY_NAME);
     static auto customButtonInfoText = UsageStatisticPlugin::tr("Adjust usage statistics settings");
     static auto cancelButtonInfoText = UsageStatisticPlugin::tr("Decide later");
 
