@@ -44,7 +44,8 @@ static bool isQmlDesigner(const ExtensionSystem::PluginSpec *spec)
     if (!spec)
         return false;
 
-    return spec->name().contains("QmlDesigner");
+    return spec->name().contains("QmlDesigner")
+        && spec->state() == ExtensionSystem::PluginSpec::Running;
 }
 
 const char qmlDesignerEventsKey[] = "qmlDesignerEvents";
