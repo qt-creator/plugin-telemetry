@@ -63,13 +63,13 @@ QmlDesignerUsageEventSource::QmlDesignerUsageEventSource()
     if (it != plugins.end()) {
         const QObject *qmlDesignerPlugin = (*it)->plugin();
         connect(qmlDesignerPlugin,
-                SIGNAL(usageStatisticsNotifier(const QString)),
+                SIGNAL(usageStatisticsNotifier(QString)),
                 this,
-                SLOT(handleUsageStatisticsNotifier(const QString)));
+                SLOT(handleUsageStatisticsNotifier(QString)));
         connect(qmlDesignerPlugin,
-                SIGNAL(usageStatisticsUsageTimer(const QString, int)),
+                SIGNAL(usageStatisticsUsageTimer(QString,int)),
                 this,
-                SLOT(handleUsageStatisticsUsageTimer(const QString, int)));
+                SLOT(handleUsageStatisticsUsageTimer(QString,int)));
     }
 }
 
@@ -112,8 +112,8 @@ void QmlDesignerUsageEventSource::launchPopup(const QString &identifier)
         QString name = tr("Enjoying %1?").arg(identifier);
         title->setProperty("text", name);
 
-        QObject::connect(root, SIGNAL(submitFeedback(QString, int)),
-                         this, SLOT(insertFeedback(const QString, int)));
+        QObject::connect(root, SIGNAL(submitFeedback(QString,int)),
+                         this, SLOT(insertFeedback(QString,int)));
         QObject::connect(root, SIGNAL(closeClicked()), this, SLOT(closeFeedbackPopup()));
     }
 
