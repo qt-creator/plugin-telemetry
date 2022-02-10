@@ -234,7 +234,7 @@ static ::Utils::InfoBarEntry makeInfoBarEntry()
     };
 
     ::Utils::InfoBarEntry entry(Constants::ENC_MSG_INFOBAR_ENTRY_ID, infoText);
-    entry.setCustomButtonInfo(customButtonInfoText, showUsageStatisticsSettingsCallback);
+    entry.addCustomButton(customButtonInfoText, showUsageStatisticsSettingsCallback);
     entry.setCancelButtonInfo(cancelButtonInfoText, hideEncouragementMessageCallback);
 
     return entry;
