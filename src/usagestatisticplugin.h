@@ -59,6 +59,7 @@ private:
     void createProvider();
     void showEncouragementMessage();
     void showFirstTimeMessage();
+    void submitDataOnFirstStart();
 
 private:
     std::shared_ptr<KUserFeedback::Provider> m_provider;

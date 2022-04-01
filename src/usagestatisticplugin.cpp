@@ -49,7 +49,7 @@
 #include <KUserFeedback/UsageTimeSource>
 #include <KUserFeedback/StyleInfoSource>
 
-#include "datasources/applicationsource.h".h "
+#include "datasources/applicationsource.h"
 #include "datasources/buildcountsource.h"
 #include "datasources/buildsystemsource.h"
 #include "datasources/examplesdatasource.h"
@@ -65,6 +65,8 @@
 #include "ui/usagestatisticpage.h"
 
 #include "common/utils.h"
+
+#include <QTimer>
 
 namespace UsageStatistic {
 namespace Internal {
@@ -141,6 +143,7 @@ bool UsageStatisticPlugin::delayedInitialize()
     restoreSettings();
 
     showFirstTimeMessage();
+    submitDataOnFirstStart();
 
     return true;
 }
@@ -214,6 +217,16 @@ void UsageStatisticPlugin::showFirstTimeMessage()
     if (m_provider && runFirstTime(*m_provider) && telemetryLevelNotSet(*m_provider)) {
         showEncouragementMessage();
     }
+}
+
+void UsageStatisticPlugin::submitDataOnFirstStart()
+{
+    /*
+     * On first start submit data after 10 minutes.
+     */
+
+    if (m_provider && runFirstTime(*m_provider) && !telemetryLevelNotSet(*m_provider))
+        QTimer::singleShot(1000 * 60 * 10, this, [this]() { m_provider->submit(); });
 }
 
 static ::Utils::InfoBarEntry makeInfoBarEntry()
