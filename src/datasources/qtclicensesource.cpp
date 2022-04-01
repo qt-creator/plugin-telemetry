@@ -24,6 +24,7 @@
 ****************************************************************************/
 #include "qtclicensesource.h"
 
+#include <app/app_version.h>
 #include <coreplugin/icore.h>
 #include <extensionsystem/iplugin.h>
 #include <extensionsystem/pluginmanager.h>
@@ -36,23 +37,44 @@ namespace Internal {
 
 using namespace KUserFeedback;
 
+static QString applicationName()
+{
+    return Core::Constants::IDE_DISPLAY_NAME;
+}
+
+static bool isQtDesignStudio()
+{
+    return applicationName() == "Qt Design Studio";
+}
+
+static const auto evaluationStr = QStringLiteral("evaluation");
+static const auto opensourceStr = QStringLiteral("opensource");
+static const auto commercialStr = QStringLiteral("commercial");
+static const auto communityStr = QStringLiteral("community");
+static const auto enterpriseStr = QStringLiteral("enterprise");
+static const auto professionalStr = QStringLiteral("professional");
+static const auto joinStr = QStringLiteral(", ");
+
+static QString possibleLicenses()
+{
+    if (isQtDesignStudio())
+        return QStringList({communityStr, professionalStr, enterpriseStr}).join(joinStr);
+    return QStringList({opensourceStr, evaluationStr, commercialStr}).join(joinStr);
+}
+
 QtcLicenseSource::QtcLicenseSource()
     : AbstractDataSource(QStringLiteral("qtcLicense"), Provider::DetailedUsageStatistics)
 {}
 
 QString QtcLicenseSource::description() const
 {
-    return tr("Qt Creator license type string: opensource, evaluation, commercial");
+    return tr("%1 license type string: %2").arg(applicationName()).arg(possibleLicenses());
 }
 
 QString QtcLicenseSource::name() const
 {
-    return tr("Qt Creator license");
+    return tr("%1 license").arg(applicationName());
 }
-
-static const auto evaluationStr = QStringLiteral("evaluation");
-static const auto opensourceStr = QStringLiteral("opensource");
-static const auto commercialStr = QStringLiteral("commercial");
 
 static bool isLicenseChecker(const ExtensionSystem::PluginSpec *spec)
 {
@@ -78,20 +100,39 @@ static bool hasEvaluationLicense(ExtensionSystem::IPlugin *plugin)
     return isEvaluation;
 }
 
+QString getQDSLicense(ExtensionSystem::IPlugin *plugin)
+{
+    if (!plugin)
+        return communityStr;
+
+    bool retVal = false;
+    bool success = QMetaObject::invokeMethod(plugin,
+                                             "qdsEnterpriseLicense",
+                                             Qt::DirectConnection,
+                                             Q_RETURN_ARG(bool, retVal));
+
+    return (success && retVal) ? enterpriseStr : professionalStr;
+}
+
 static QString licenseString()
 {
     const auto plugins = ExtensionSystem::PluginManager::plugins();
     const auto it = std::find_if(plugins.begin(), plugins.end(), &isLicenseChecker);
-    if (it != plugins.end()) {
-        return hasEvaluationLicense((*it)->plugin()) ? evaluationStr: commercialStr;
+
+    if (isQtDesignStudio()) {
+        if (it != plugins.end())
+            return getQDSLicense((*it)->plugin());
+        return communityStr;
     }
+    if (it != plugins.end())
+        return hasEvaluationLicense((*it)->plugin()) ? evaluationStr: commercialStr;
 
     return opensourceStr;
 }
 
 QVariant QtcLicenseSource::data()
 {
-    return QVariantMap{{"value", licenseString()}};
+    return QVariantMap{{"value", licenseString()}, {"isQtDesignStudio", isQtDesignStudio()}};
 }
 
 } // namespace Internal
