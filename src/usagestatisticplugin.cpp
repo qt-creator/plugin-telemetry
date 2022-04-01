@@ -65,6 +65,8 @@
 
 #include "common/utils.h"
 
+#include <QTimer>
+
 namespace UsageStatistic {
 namespace Internal {
 
@@ -134,6 +136,7 @@ bool UsageStatisticPlugin::delayedInitialize()
     restoreSettings();
 
     showFirstTimeMessage();
+    submitDataOnFirstStart();
 
     return true;
 }
@@ -212,6 +215,16 @@ void UsageStatisticPlugin::showFirstTimeMessage()
     if (m_provider && runFirstTime(*m_provider) && telemetryLevelNotSet(*m_provider)) {
         showEncouragementMessage();
     }
+}
+
+void UsageStatisticPlugin::submitDataOnFirstStart()
+{
+    /*
+     * On first start submit data after 10 minutes.
+     */
+
+    if (m_provider && runFirstTime(*m_provider) && !telemetryLevelNotSet(*m_provider))
+        QTimer::singleShot(1000 * 60 * 10, [this](){ m_provider->submit(); });
 }
 
 static ::Utils::InfoBarEntry makeInfoBarEntry()
