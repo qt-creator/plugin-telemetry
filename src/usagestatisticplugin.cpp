@@ -172,7 +172,7 @@ void UsageStatisticPlugin::restoreSettings()
 
 static constexpr int encouragementTimeSec() { return 1800; }
 static constexpr int encouragementIntervalDays() { return 1; }
-static constexpr int submissionIntervalDays() { return 10; }
+static constexpr int submissionIntervalDays() { return 1; }
 
 void UsageStatisticPlugin::createProvider()
 {
