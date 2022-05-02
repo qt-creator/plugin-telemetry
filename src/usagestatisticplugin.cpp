@@ -224,7 +224,7 @@ void UsageStatisticPlugin::submitDataOnFirstStart()
      */
 
     if (m_provider && runFirstTime(*m_provider) && !telemetryLevelNotSet(*m_provider))
-        QTimer::singleShot(1000 * 60 * 10, [this](){ m_provider->submit(); });
+        QTimer::singleShot(1000 * 60 * 10, this, [this](){ m_provider->submit(); });
 }
 
 static ::Utils::InfoBarEntry makeInfoBarEntry()
