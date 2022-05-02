@@ -62,14 +62,16 @@ QmlDesignerUsageEventSource::QmlDesignerUsageEventSource()
     const auto it = std::find_if(plugins.begin(), plugins.end(), &isQmlDesigner);
     if (it != plugins.end()) {
         const QObject *qmlDesignerPlugin = (*it)->plugin();
-        connect(qmlDesignerPlugin,
-                SIGNAL(usageStatisticsNotifier(QString)),
-                this,
-                SLOT(handleUsageStatisticsNotifier(QString)));
-        connect(qmlDesignerPlugin,
-                SIGNAL(usageStatisticsUsageTimer(QString,int)),
-                this,
-                SLOT(handleUsageStatisticsUsageTimer(QString,int)));
+        if (qmlDesignerPlugin) {
+            connect(qmlDesignerPlugin,
+                    SIGNAL(usageStatisticsNotifier(QString)),
+                    this,
+                    SLOT(handleUsageStatisticsNotifier(QString)));
+            connect(qmlDesignerPlugin,
+                    SIGNAL(usageStatisticsUsageTimer(QString,int)),
+                    this,
+                    SLOT(handleUsageStatisticsUsageTimer(QString,int)));
+        }
     }
 }
 
