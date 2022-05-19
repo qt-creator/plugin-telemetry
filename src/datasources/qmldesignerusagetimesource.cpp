@@ -91,6 +91,13 @@ static bool editingQmlFile()
 
 void QmlDesignerUsageTimeSource::updateTrackingState(const QString &modeName)
 {
+    static QString lastMode;
+
+    if (lastMode == modeName)
+        return;
+
+    lastMode = modeName;
+
     if (isDesignMode(modeName) && editingQmlFile() && !isTimeTrackingActive()) {
         Q_EMIT start();
     } else {
