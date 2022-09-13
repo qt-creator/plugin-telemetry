@@ -138,9 +138,19 @@ void QmlDesignerUsageEventSource::handleUsageStatisticsUsageTimer(const QString 
         it.value() = it.value().toInt() + elapsed;
 
         // Show the user feedback prompt after time limit is passed
-        static const QSet<QString> supportedViews {"Form Editor", "3D Editor", "Timeline",
-                                                   "Transition Editor", "Curve Editor"};
-        static const int timeLimit = 864'000'000; // 10 days
+        static const QSet<QString> supportedViews{"formEditor",
+                                                  "3DEditor",
+                                                  "statesEditor,",
+                                                  "timeline",
+                                                  "itemLibrary",
+                                                  "assetsLibrary",
+                                                  "transitionEditor",
+                                                  "curveEditor",
+                                                  "propertyEditor",
+                                                  "textEditor",
+                                                  "materialBrowser",
+                                                  "navigatorView"};
+        static const int timeLimit = 864'000'00; // 1 day
         if (supportedViews.contains(identifier) && !m_feedbackPoppedData[identifier].toBool()
                 && m_timeData.value(identifier).toInt() >= timeLimit) {
             launchPopup(identifier);
