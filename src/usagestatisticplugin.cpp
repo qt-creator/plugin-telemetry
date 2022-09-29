@@ -49,14 +49,15 @@
 #include <KUserFeedback/UsageTimeSource>
 #include <KUserFeedback/StyleInfoSource>
 
-#include "datasources/qtclicensesource.h"
+#include "datasources/applicationsource.h".h "
 #include "datasources/buildcountsource.h"
 #include "datasources/buildsystemsource.h"
-#include "datasources/modeusagetimesource.h"
 #include "datasources/examplesdatasource.h"
 #include "datasources/kitsource.h"
-#include "datasources/qmldesignerusagetimesource.h"
+#include "datasources/modeusagetimesource.h"
 #include "datasources/qmldesignerusageeventsource.h"
+#include "datasources/qmldesignerusagetimesource.h"
+#include "datasources/qtclicensesource.h"
 #include "datasources/servicesource.h"
 
 #include "services/datasubmitter.h"
@@ -102,6 +103,7 @@ static void addDefaultDataSources(KUserFeedback::Provider &provider)
 
 static void addQtCreatorDataSources(KUserFeedback::Provider &provider)
 {
+    provider.addDataSource(new ApplicationSource);
     provider.addDataSource(new QtcLicenseSource);
     provider.addDataSource(new BuildCountSource);
     provider.addDataSource(new BuildSystemSource);
