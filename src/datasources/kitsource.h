@@ -50,7 +50,10 @@ public: // AbstractDataSource interface
      *         {
      *             "compiler": {
      *                 "name"   : string,
-     *                 "version": int
+     *                 "version": int,
+     *                 "abi": string,
+     *                 "buildSuccesses": int,
+     *                 "buildFails": int
      *             },
      *             "debugger": {
      *                 "name"   : string,
@@ -78,6 +81,15 @@ public: // AbstractDataSource interface
      *  The version format if "\d+.\d+.\d+".
      */
     QVariant data() override;
+
+private:
+    void loadImpl(QSettings *settings);
+    void storeImpl(QSettings *settings);
+    void resetImpl(QSettings *settings);
+
+    friend class KitInfo;
+    QVariantMap m_buildSuccessesForToolChain;
+    QVariantMap m_buildFailsForToolChain;
 };
 
 } // namespace Internal
