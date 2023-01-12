@@ -26,11 +26,17 @@
 
 #include <QtCore/QSettings>
 
+#include <projectexplorer/buildmanager.h>
+#include <projectexplorer/gcctoolchain.h>
 #include <projectexplorer/kitinformation.h>
 #include <projectexplorer/kitmanager.h>
+#include <projectexplorer/project.h>
 #include <projectexplorer/projectexplorerconstants.h>
-#include <projectexplorer/gcctoolchain.h>
+#include <projectexplorer/session.h>
+#include <projectexplorer/target.h>
+
 #include <qtsupport/qtkitinformation.h>
+
 #include <debugger/debuggerkitinformation.h>
 #include <debugger/debuggeritem.h>
 
@@ -45,6 +51,18 @@ using namespace ProjectExplorer;
 KitSource::KitSource()
     : AbstractDataSource(QStringLiteral("kits"), Provider::DetailedUsageStatistics)
 {
+    QObject::connect(ProjectExplorer::BuildManager::instance(),
+                     &ProjectExplorer::BuildManager::buildQueueFinished,
+                     [&](bool success) {
+        const Project *project = SessionManager::startupProject();
+        const Target *target = project ? project->activeTarget() : nullptr;
+        const Kit *kit = target ? target->kit() : nullptr;
+        const ToolChain *toolChain = ToolChainKitAspect::toolChain(kit, Constants::CXX_LANGUAGE_ID);
+        const Abi abi = toolChain ? toolChain->targetAbi() : Abi();
+        const QString abiName = abi.toString();
+        QVariantMap &bucket = success ? m_buildSuccessesForToolChain : m_buildFailsForToolChain;
+        bucket[abiName] = bucket.value(abiName, 0).toInt() + 1;
+    });
 }
 
 KitSource::~KitSource() = default;
@@ -60,6 +78,8 @@ QString KitSource::description() const
 }
 
 static QString kitsInfoKey() { return QStringLiteral("kitsInfo"); }
+static QString buildSuccessesKey() { return  QStringLiteral("buildSuccesses"); }
+static QString buildFailsKey() { return QStringLiteral("buildFails"); }
 
 static QString extractToolChainVersion(const ToolChain &toolChain)
 {
@@ -70,9 +90,36 @@ static QString extractToolChainVersion(const ToolChain &toolChain)
     }
 }
 
+void KitSource::loadImpl(QSettings *settings)
+{
+    auto setter = ScopedSettingsGroupSetter::forDataSource(*this, *settings);
+    m_buildSuccessesForToolChain = settings->value(buildSuccessesKey(), QVariantMap{}).toMap();
+    m_buildFailsForToolChain = settings->value(buildFailsKey(), QVariantMap{}).toMap();
+}
+
+void KitSource::storeImpl(QSettings *settings)
+{
+    auto setter = ScopedSettingsGroupSetter::forDataSource(*this, *settings);
+    settings->setValue(buildSuccessesKey(), m_buildSuccessesForToolChain);
+    settings->setValue(buildFailsKey(), m_buildFailsForToolChain);
+}
+
+void KitSource::resetImpl(QSettings *settings)
+{
+    m_buildSuccessesForToolChain.clear();
+    m_buildFailsForToolChain.clear();
+
+    storeImpl(settings);
+}
+
 class KitInfo
 {
 public:
+    KitInfo(Kit &kit, const KitSource &source) : m_kit(kit), m_source(source)
+    {
+        addKitInfo();
+    }
+
     KitInfo &withQtVersionInfo()
     {
         static const QString qtKey = QStringLiteral("qt");
@@ -98,9 +145,14 @@ public:
         static const QString compilerKey = QStringLiteral("compiler");
 
         if (auto toolChain = ToolChainKitAspect::toolChain(&m_kit, Constants::CXX_LANGUAGE_ID)) {
-            m_map.insert(compilerKey,
-                         QVariantMap{{nameKey(), toolChain->typeDisplayName()},
-                                     {versionKey(), extractToolChainVersion(*toolChain)}});
+            const QString abiName = toolChain->targetAbi().toString();
+            m_map.insert(compilerKey, QVariantMap{
+                {nameKey(), toolChain->typeDisplayName()},
+                {abiKey(), abiName},
+                {versionKey(), extractToolChainVersion(*toolChain)},
+                {buildSuccessesKey(), m_source.m_buildSuccessesForToolChain.value(abiName).toInt()},
+                {buildFailsKey(), m_source.m_buildFailsForToolChain.value(abiName).toInt()}
+            });
         }
 
         return *this;
@@ -121,10 +173,7 @@ public:
 
     QVariantMap extract() const { return m_map; }
 
-    static KitInfo forKit(Kit &kit) { return KitInfo(kit); }
-
 private: // Methods
-    KitInfo(Kit &kit) : m_kit(kit) { addKitInfo(); }
 
     void addKitInfo()
     {
@@ -161,18 +210,20 @@ private: // Methods
 
     static QString versionKey() { return QStringLiteral("version"); }
     static QString nameKey() { return QStringLiteral("name"); }
+    static QString abiKey() { return QStringLiteral("abi"); }
 
 private: // Data
     Kit &m_kit;
+    const KitSource &m_source;
     QVariantMap m_map;
 };
 
-static QVariantList kitsInfo()
+QVariant KitSource::data()
 {
     QVariantList kitsInfoList;
     for (auto &&kit : KitManager::instance()->kits()) {
         if (kit && kit->isValid()) {
-            kitsInfoList << KitInfo::forKit(*kit)
+            kitsInfoList << KitInfo(*kit, *this)
                             .withCompilerInfo()
                             .withDebuggerInfo()
                             .withQtVersionInfo()
@@ -180,12 +231,7 @@ static QVariantList kitsInfo()
         }
     }
 
-    return kitsInfoList;
-}
-
-QVariant KitSource::data()
-{
-    return QVariantMap{{kitsInfoKey(), kitsInfo()}};
+    return QVariantMap{{kitsInfoKey(), kitsInfoList}};
 }
 
 } // namespace Internal
