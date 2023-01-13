@@ -51,12 +51,13 @@ public:
     void storeImpl(QSettings *settings) override;
     void resetImpl(QSettings *settings) override;
 
+signals:
     void launchPopup(const QString &identifier); // launch user feedback popup
 
 public slots:
     void handleUsageStatisticsNotifier(const QString &identifier);
     void handleUsageStatisticsUsageTimer(const QString &identifier, int elapsed);
-    void insertFeedback(const QString &feedback, int rating);
+    void insertFeedback(const QString &identifier, const QString &feedback, int rating);
     void closeFeedbackPopup();
 
 private:

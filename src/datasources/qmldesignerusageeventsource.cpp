@@ -66,10 +66,21 @@ QmlDesignerUsageEventSource::QmlDesignerUsageEventSource()
                 SIGNAL(usageStatisticsNotifier(QString)),
                 this,
                 SLOT(handleUsageStatisticsNotifier(QString)));
+
         connect(qmlDesignerPlugin,
-                SIGNAL(usageStatisticsUsageTimer(QString,int)),
+                SIGNAL(usageStatisticsUsageTimer(QString, int)),
                 this,
-                SLOT(handleUsageStatisticsUsageTimer(QString,int)));
+                SLOT(handleUsageStatisticsUsageTimer(QString, int)));
+
+        connect(qmlDesignerPlugin,
+                SIGNAL(usageStatisticsInsertFeedback(QString, QString, int)),
+                this,
+                SLOT(insertFeedback(QString, QString, int)));
+
+        connect(this,
+                SIGNAL(launchPopup(QString)),
+                qmlDesignerPlugin,
+                SLOT(lauchFeedbackPopup(QString)));
     }
 }
 
@@ -88,36 +99,14 @@ void QmlDesignerUsageEventSource::closeFeedbackPopup()
     m_feedbackWidget->deleteLater();
 }
 
-void QmlDesignerUsageEventSource::insertFeedback(const QString &feedback, int rating)
+void QmlDesignerUsageEventSource::insertFeedback(const QString &identifier,
+                                                 const QString &feedback,
+                                                 int rating)
 {
     if (!feedback.isEmpty())
-        m_feedbackTextData.insert(currentIdentifier, feedback);
+        m_feedbackTextData.insert(identifier, feedback);
 
-    m_feedbackRatingData.insert(currentIdentifier, rating);
-}
-
-void QmlDesignerUsageEventSource::launchPopup(const QString &identifier)
-{
-    currentIdentifier = identifier;
-
-    if (!m_feedbackWidget) {
-        m_feedbackWidget = new QQuickWidget(Core::ICore::dialogParent());
-        m_feedbackWidget->setSource(QUrl("qrc:/usagestatistic/ui/FeedbackPopup.qml"));
-        m_feedbackWidget->setWindowModality(Qt::ApplicationModal);
-        m_feedbackWidget->setWindowFlags(Qt::SplashScreen);
-        m_feedbackWidget->setAttribute(Qt::WA_DeleteOnClose);
-
-        QQuickItem *root = m_feedbackWidget->rootObject();
-        QObject *title = root->findChild<QObject *>("title");
-        QString name = tr("Enjoying %1?").arg(identifier);
-        title->setProperty("text", name);
-
-        QObject::connect(root, SIGNAL(submitFeedback(QString,int)),
-                         this, SLOT(insertFeedback(QString,int)));
-        QObject::connect(root, SIGNAL(closeClicked()), this, SLOT(closeFeedbackPopup()));
-    }
-
-    m_feedbackWidget->show();
+    m_feedbackRatingData.insert(identifier, rating);
 }
 
 void QmlDesignerUsageEventSource::handleUsageStatisticsNotifier(const QString &identifier)
@@ -132,28 +121,16 @@ void QmlDesignerUsageEventSource::handleUsageStatisticsNotifier(const QString &i
 
 void QmlDesignerUsageEventSource::handleUsageStatisticsUsageTimer(const QString &identifier, int elapsed)
 {
+
     auto it = m_timeData.find(identifier);
 
     if (it != m_timeData.end()) {
         it.value() = it.value().toInt() + elapsed;
 
-        // Show the user feedback prompt after time limit is passed
-        static const QSet<QString> supportedViews{"formEditor",
-                                                  "3DEditor",
-                                                  "statesEditor,",
-                                                  "timeline",
-                                                  "itemLibrary",
-                                                  "assetsLibrary",
-                                                  "transitionEditor",
-                                                  "curveEditor",
-                                                  "propertyEditor",
-                                                  "textEditor",
-                                                  "materialBrowser",
-                                                  "navigatorView"};
-        static const int timeLimit = 864'000'00; // 1 day
-        if (supportedViews.contains(identifier) && !m_feedbackPoppedData[identifier].toBool()
-                && m_timeData.value(identifier).toInt() >= timeLimit) {
-            launchPopup(identifier);
+        static const int timeLimit = 14400000; // 4 hours
+        if (!m_feedbackPoppedData[identifier].toBool()
+            && m_timeData.value(identifier).toInt() >= timeLimit) {
+            emit launchPopup(identifier);
             m_feedbackPoppedData[identifier] = QVariant(true);
         }
     } else {
