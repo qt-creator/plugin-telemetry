@@ -38,7 +38,7 @@ class QmlDesignerUsageEventSource : public QObject, public KUserFeedback::Abstra
     Q_OBJECT
 
 public:
-    QmlDesignerUsageEventSource();
+    QmlDesignerUsageEventSource(bool enabled);
 
 public:
     QString name() const override;
@@ -58,7 +58,6 @@ public slots:
     void handleUsageStatisticsNotifier(const QString &identifier);
     void handleUsageStatisticsUsageTimer(const QString &identifier, int elapsed);
     void insertFeedback(const QString &identifier, const QString &feedback, int rating);
-    void closeFeedbackPopup();
 
 private:
     QMap<QString, QVariant> m_eventData;
@@ -68,7 +67,8 @@ private:
     QHash<QString, QVariant> m_feedbackTextData;
     QHash<QString, QVariant> m_feedbackRatingData;
     QHash<QString, QVariant> m_feedbackPoppedData;
-    QPointer<QQuickWidget> m_feedbackWidget;
+
+    bool m_enabled = false;
 };
 
 } // namespace Internal

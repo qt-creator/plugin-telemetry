@@ -73,6 +73,11 @@ UsageStatisticPlugin::UsageStatisticPlugin() = default;
 
 UsageStatisticPlugin::~UsageStatisticPlugin() = default;
 
+static bool telemetryLevelNotSet(const KUserFeedback::Provider &provider)
+{
+    return provider.telemetryMode() == KUserFeedback::Provider::NoTelemetry;
+}
+
 bool UsageStatisticPlugin::initialize(const QStringList &arguments, QString *errorString)
 {
     Q_UNUSED(arguments)
@@ -111,7 +116,7 @@ static void addQtCreatorDataSources(KUserFeedback::Provider &provider)
     provider.addDataSource(new ExamplesDataSource);
     provider.addDataSource(new KitSource);
     provider.addDataSource(new QmlDesignerUsageTimeSource);
-    provider.addDataSource(new QmlDesignerUsageEventSource);
+    provider.addDataSource(new QmlDesignerUsageEventSource(!telemetryLevelNotSet(provider)));
 }
 
 static void addServiceDataSource(const std::shared_ptr<KUserFeedback::Provider> &provider)
@@ -202,11 +207,6 @@ static bool runFirstTime(const KUserFeedback::Provider &provider)
     }
 
     return false;
-}
-
-static bool telemetryLevelNotSet(const KUserFeedback::Provider &provider)
-{
-    return provider.telemetryMode() == KUserFeedback::Provider::NoTelemetry;
 }
 
 void UsageStatisticPlugin::showFirstTimeMessage()

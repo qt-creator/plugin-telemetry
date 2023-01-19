@@ -55,7 +55,7 @@ const char qmlDesignerFeedbackTextKey[] = "qmlDesignerFeedbackTextKey";
 const char qmlDesignerFeedbackRatingKey[] = "qmlDesignerFeedbackRatingKey";
 const char qmlDesignerFeedbackPoppedKey[] = "qmlDesignerFeedbackPoppedKey";
 
-QmlDesignerUsageEventSource::QmlDesignerUsageEventSource()
+QmlDesignerUsageEventSource::QmlDesignerUsageEventSource(bool enabled)
     : KUserFeedback::AbstractDataSource("qmlDesignerUsageEvents", Provider::DetailedUsageStatistics)
 {
     const auto plugins = ExtensionSystem::PluginManager::plugins();
@@ -82,6 +82,7 @@ QmlDesignerUsageEventSource::QmlDesignerUsageEventSource()
                 qmlDesignerPlugin,
                 SLOT(lauchFeedbackPopup(QString)));
     }
+    m_enabled = enabled;
 }
 
 QString QmlDesignerUsageEventSource::name() const
@@ -92,11 +93,6 @@ QString QmlDesignerUsageEventSource::name() const
 QString QmlDesignerUsageEventSource::description() const
 {
     return tr("What views and actions are used in QML Design mode.");
-}
-
-void QmlDesignerUsageEventSource::closeFeedbackPopup()
-{
-    m_feedbackWidget->deleteLater();
 }
 
 void QmlDesignerUsageEventSource::insertFeedback(const QString &identifier,
@@ -121,14 +117,13 @@ void QmlDesignerUsageEventSource::handleUsageStatisticsNotifier(const QString &i
 
 void QmlDesignerUsageEventSource::handleUsageStatisticsUsageTimer(const QString &identifier, int elapsed)
 {
-
     auto it = m_timeData.find(identifier);
 
     if (it != m_timeData.end()) {
         it.value() = it.value().toInt() + elapsed;
 
         static const int timeLimit = 14400000; // 4 hours
-        if (!m_feedbackPoppedData[identifier].toBool()
+        if (m_enabled && !m_feedbackPoppedData[identifier].toBool()
             && m_timeData.value(identifier).toInt() >= timeLimit) {
             emit launchPopup(identifier);
             m_feedbackPoppedData[identifier] = QVariant(true);
