@@ -125,8 +125,8 @@ void QmlDesignerUsageEventSource::handleUsageStatisticsUsageTimer(const QString 
         static const int timeLimit = 14400000; // 4 hours
         if (m_enabled && !m_feedbackPoppedData[identifier].toBool()
             && m_timeData.value(identifier).toInt() >= timeLimit) {
-            emit launchPopup(identifier);
             m_feedbackPoppedData[identifier] = QVariant(true);
+            emit launchPopup(identifier);
         }
     } else {
         m_timeData.insert(identifier, elapsed);
