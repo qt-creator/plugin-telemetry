@@ -73,6 +73,11 @@ QmlDesignerUsageEventSource::QmlDesignerUsageEventSource(bool enabled)
                 SLOT(handleUsageStatisticsUsageTimer(QString, int)));
 
         connect(qmlDesignerPlugin,
+                SIGNAL(usageStatisticsUsageDuration(QString, int)),
+                this,
+                SLOT(handleUsageStatisticsUsageDuration(QString, int)));
+
+        connect(qmlDesignerPlugin,
                 SIGNAL(usageStatisticsInsertFeedback(QString, QString, int)),
                 this,
                 SLOT(insertFeedback(QString, QString, int)));
@@ -130,6 +135,22 @@ void QmlDesignerUsageEventSource::handleUsageStatisticsUsageTimer(const QString 
         }
     } else {
         m_timeData.insert(identifier, elapsed);
+    }
+}
+
+void QmlDesignerUsageEventSource::handleUsageStatisticsUsageDuration(const QString &identifier,
+                                                                     int elapsed)
+{
+    auto it = m_eventData.find(identifier);
+
+    if (it != m_eventData.end()) {
+        QVariantList list = it.value().toList();
+        list.append(elapsed);
+        it.value() = list;
+    } else {
+        QVariantList list;
+        list.append(elapsed);
+        m_eventData.insert(identifier, list);
     }
 }
 

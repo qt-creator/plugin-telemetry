@@ -57,6 +57,7 @@ signals:
 public slots:
     void handleUsageStatisticsNotifier(const QString &identifier);
     void handleUsageStatisticsUsageTimer(const QString &identifier, int elapsed);
+    void handleUsageStatisticsUsageDuration(const QString &identifier, int elapsed);
     void insertFeedback(const QString &identifier, const QString &feedback, int rating);
 
 private:
