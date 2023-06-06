@@ -38,7 +38,7 @@ namespace Internal {
 class UsageStatisticWidget;
 
 //! Settings page
-class UsageStatisticPage : public Core::IOptionsPage
+class UsageStatisticPage : public QObject, Core::IOptionsPage
 {
     Q_OBJECT
 
