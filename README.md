@@ -1,7 +1,7 @@
 # Qt Creator Telemetry Plugin
 
 The plugin is used in Qt Creator and Qt Design Studio to send telemetry data.
-It is based on [KUserFeedback](https://api.kde.org/frameworks-api/frameworks-apidocs/frameworks/kuserfeedback/html/index.html).
+It is based on [KUserFeedback](https://api.kde.org/frameworks/kuserfeedback/html).
 
 # Checking out sources
 
