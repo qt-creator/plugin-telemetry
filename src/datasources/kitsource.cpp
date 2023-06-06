@@ -32,7 +32,7 @@
 #include <projectexplorer/kitmanager.h>
 #include <projectexplorer/project.h>
 #include <projectexplorer/projectexplorerconstants.h>
-#include <projectexplorer/session.h>
+#include <projectexplorer/projectmanager.h>
 #include <projectexplorer/target.h>
 
 #include <qtsupport/qtkitinformation.h>
@@ -54,15 +54,17 @@ KitSource::KitSource()
     QObject::connect(ProjectExplorer::BuildManager::instance(),
                      &ProjectExplorer::BuildManager::buildQueueFinished,
                      [&](bool success) {
-        const Project *project = SessionManager::startupProject();
-        const Target *target = project ? project->activeTarget() : nullptr;
-        const Kit *kit = target ? target->kit() : nullptr;
-        const ToolChain *toolChain = ToolChainKitAspect::toolChain(kit, Constants::CXX_LANGUAGE_ID);
-        const Abi abi = toolChain ? toolChain->targetAbi() : Abi();
-        const QString abiName = abi.toString();
-        QVariantMap &bucket = success ? m_buildSuccessesForToolChain : m_buildFailsForToolChain;
-        bucket[abiName] = bucket.value(abiName, 0).toInt() + 1;
-    });
+                         const Project *project = ProjectManager::startupProject();
+                         const Target *target = project ? project->activeTarget() : nullptr;
+                         const Kit *kit = target ? target->kit() : nullptr;
+                         const ToolChain *toolChain = ToolChainKitAspect::toolChain(
+                             kit, Constants::CXX_LANGUAGE_ID);
+                         const Abi abi = toolChain ? toolChain->targetAbi() : Abi();
+                         const QString abiName = abi.toString();
+                         QVariantMap &bucket = success ? m_buildSuccessesForToolChain
+                                                       : m_buildFailsForToolChain;
+                         bucket[abiName] = bucket.value(abiName, 0).toInt() + 1;
+                     });
 }
 
 KitSource::~KitSource() = default;

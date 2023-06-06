@@ -27,8 +27,10 @@
 #include <QtCore/QSettings>
 #include <QtCore/QRegularExpression>
 
+#include <coreplugin/session.h>
+
 #include <projectexplorer/project.h>
-#include <projectexplorer/session.h>
+#include <projectexplorer/projectmanager.h>
 
 #include <common/scopedsettingsgroupsetter.h>
 
@@ -40,17 +42,20 @@ using namespace KUserFeedback;
 ExamplesDataSource::ExamplesDataSource()
     : AbstractDataSource(QStringLiteral("examplesData"), Provider::DetailedUsageStatistics)
 {
-    connect(ProjectExplorer::SessionManager::instance(),
-            &ProjectExplorer::SessionManager::startupProjectChanged,
-            this, &ExamplesDataSource::updateOpenedExamples);
+    connect(ProjectExplorer::ProjectManager::instance(),
+            &ProjectExplorer::ProjectManager::startupProjectChanged,
+            this,
+            &ExamplesDataSource::updateOpenedExamples);
 
-    connect(ProjectExplorer::SessionManager::instance(),
-            &ProjectExplorer::SessionManager::projectAdded,
-            this, &ExamplesDataSource::updateOpenedExamples);
+    connect(ProjectExplorer::ProjectManager::instance(),
+            &ProjectExplorer::ProjectManager::projectAdded,
+            this,
+            &ExamplesDataSource::updateOpenedExamples);
 
-    connect(ProjectExplorer::SessionManager::instance(),
-            &ProjectExplorer::SessionManager::sessionLoaded,
-            this, &ExamplesDataSource::updateOpenedExamples);
+    connect(Core::SessionManager::instance(),
+            &Core::SessionManager::sessionLoaded,
+            this,
+            &ExamplesDataSource::updateOpenedExamples);
 }
 
 ExamplesDataSource::~ExamplesDataSource() = default;
@@ -102,7 +107,7 @@ static QString examplePattern()
 void ExamplesDataSource::updateOpenedExamples()
 {
     QRegularExpression re(examplePattern().arg(examplePathGroupName()));
-    for (auto project : ProjectExplorer::SessionManager::projects()) {
+    for (auto project : ProjectExplorer::ProjectManager::projects()) {
         if (project) {
             auto projectPath = QDir::fromNativeSeparators(project->projectFilePath().toString());
             const auto match = re.match(projectPath);

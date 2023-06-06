@@ -27,8 +27,10 @@
 #include <QtCore/QSettings>
 #include <QtCore/QCryptographicHash>
 
+#include <coreplugin/session.h>
+
 #include <projectexplorer/project.h>
-#include <projectexplorer/session.h>
+#include <projectexplorer/projectmanager.h>
 
 #include <KUserFeedback/Provider>
 
@@ -66,12 +68,13 @@ static BuildSystemSource::BuildSystem extractBuildSystemType(const QString &name
 BuildSystemSource::BuildSystemSource()
     : AbstractDataSource(QStringLiteral("buildSystem"), Provider::DetailedUsageStatistics)
 {
-    connect(ProjectExplorer::SessionManager::instance(),
-            &ProjectExplorer::SessionManager::projectAdded,
-            this, &BuildSystemSource::updateProjects);
+    connect(ProjectExplorer::ProjectManager::instance(),
+            &ProjectExplorer::ProjectManager::projectAdded,
+            this,
+            &BuildSystemSource::updateProjects);
 
-    connect(ProjectExplorer::SessionManager::instance(),
-            &ProjectExplorer::SessionManager::sessionLoaded,
+    connect(Core::SessionManager::instance(),
+            &Core::SessionManager::sessionLoaded,
             this, &BuildSystemSource::updateProjects);
 }
 
@@ -149,7 +152,7 @@ static QByteArray hashPath(const Utils::FilePath& name)
 
 void BuildSystemSource::updateProjects()
 {
-    for (auto project : ProjectExplorer::SessionManager::projects()) {
+    for (auto project : ProjectExplorer::ProjectManager::projects()) {
         if (project) {
             const auto projectName = QString::fromUtf8(project->id().name()).toLower();
             const auto projectPath = project->projectFilePath();
