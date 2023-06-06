@@ -49,7 +49,7 @@
 #include <KUserFeedback/UsageTimeSource>
 #include <KUserFeedback/StyleInfoSource>
 
-#include "datasources/applicationsource.h".h "
+#include "datasources/applicationsource.h"
 #include "datasources/buildcountsource.h"
 #include "datasources/buildsystemsource.h"
 #include "datasources/examplesdatasource.h"
