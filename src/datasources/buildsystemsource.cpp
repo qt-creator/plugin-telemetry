@@ -27,9 +27,10 @@
 #include <QtCore/QSettings>
 #include <QtCore/QCryptographicHash>
 
+#include <coreplugin/session.h>
+
 #include <projectexplorer/project.h>
 #include <projectexplorer/projectmanager.h>
-#include <projectexplorer/session.h>
 
 #include <KUserFeedback/Provider>
 
@@ -72,8 +73,8 @@ BuildSystemSource::BuildSystemSource()
             this,
             &BuildSystemSource::updateProjects);
 
-    connect(ProjectExplorer::SessionManager::instance(),
-            &ProjectExplorer::SessionManager::sessionLoaded,
+    connect(Core::SessionManager::instance(),
+            &Core::SessionManager::sessionLoaded,
             this, &BuildSystemSource::updateProjects);
 }
 
