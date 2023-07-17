@@ -150,6 +150,9 @@ bool UsageStatisticPlugin::delayedInitialize()
 
 ExtensionSystem::IPlugin::ShutdownFlag UsageStatisticPlugin::aboutToShutdown()
 {
+    if (m_provider)
+        m_provider->submit();
+
     storeSettings();
 
     return SynchronousShutdown;
@@ -179,7 +182,10 @@ void UsageStatisticPlugin::restoreSettings()
 
 static constexpr int encouragementTimeSec() { return 1800; }
 static constexpr int encouragementIntervalDays() { return 1; }
-static constexpr int submissionIntervalDays() { return 10; }
+static constexpr int submissionIntervalDays()
+{
+    return 1;
+}
 
 void UsageStatisticPlugin::createProvider()
 {
