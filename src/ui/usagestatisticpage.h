@@ -37,11 +37,17 @@ namespace Internal {
 
 class UsageStatisticWidget;
 
+class SettingsSignals : public QObject
+{
+    Q_OBJECT
+signals:
+    void settingsChanged();
+};
+
 //! Settings page
 class UsageStatisticPage : public Core::IOptionsPage
 {
-    Q_OBJECT
-
+    Q_DECLARE_TR_FUNCTIONS(UsageStatistic::Internal::UsageStatisticPage)
 public:
     UsageStatisticPage(std::shared_ptr<KUserFeedback::Provider> provider);
     ~UsageStatisticPage() override;
@@ -51,12 +57,12 @@ public: // IOptionsPage interface
     void apply() override;
     void finish() override;
 
-Q_SIGNALS:
-    void settingsChanged();
+    SettingsSignals *instance() { return &m_signals; }
 
 private: // Data
     std::unique_ptr<UsageStatisticWidget> m_feedbackWidget;
     std::shared_ptr<KUserFeedback::Provider> m_provider;
+    SettingsSignals m_signals;
 
 private: // Methods
     void configure();

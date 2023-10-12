@@ -27,9 +27,9 @@
 #include <QtCore/QSettings>
 #include <QtCore/QRegularExpression>
 
+#include <coreplugin/session.h>
 #include <projectexplorer/project.h>
 #include <projectexplorer/projectmanager.h>
-#include <projectexplorer/session.h>
 
 #include <common/scopedsettingsgroupsetter.h>
 
@@ -51,8 +51,8 @@ ExamplesDataSource::ExamplesDataSource()
             this,
             &ExamplesDataSource::updateOpenedExamples);
 
-    connect(ProjectExplorer::SessionManager::instance(),
-            &ProjectExplorer::SessionManager::sessionLoaded,
+    connect(Core::SessionManager::instance(),
+            &Core::SessionManager::sessionLoaded,
             this,
             &ExamplesDataSource::updateOpenedExamples);
 }

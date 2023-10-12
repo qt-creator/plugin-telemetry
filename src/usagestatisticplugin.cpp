@@ -25,8 +25,6 @@
 #include "usagestatisticplugin.h"
 #include "usagestatisticconstants.h"
 
-#include <app/app_version.h>
-
 #include <coreplugin/icore.h>
 #include <coreplugin/icontext.h>
 #include <coreplugin/actionmanager/actionmanager.h>
@@ -49,7 +47,7 @@
 #include <KUserFeedback/UsageTimeSource>
 #include <KUserFeedback/StyleInfoSource>
 
-#include "datasources/applicationsource.h".h "
+#include "datasources/applicationsource.h"
 #include "datasources/buildcountsource.h"
 #include "datasources/buildsystemsource.h"
 #include "datasources/examplesdatasource.h"
@@ -65,6 +63,8 @@
 #include "ui/usagestatisticpage.h"
 
 #include "common/utils.h"
+
+#include <QGuiApplication>
 
 namespace UsageStatistic {
 namespace Internal {
@@ -151,8 +151,10 @@ void UsageStatisticPlugin::createUsageStatisticPage()
 {
     m_usageStatisticPage = std::make_unique<UsageStatisticPage>(m_provider);
 
-    connect(m_usageStatisticPage.get(), &UsageStatisticPage::settingsChanged,
-            this, &UsageStatisticPlugin::storeSettings);
+    connect(m_usageStatisticPage->instance(),
+            &SettingsSignals::settingsChanged,
+            this,
+            &UsageStatisticPlugin::storeSettings);
 }
 
 void UsageStatisticPlugin::storeSettings()
@@ -220,7 +222,7 @@ static ::Utils::InfoBarEntry makeInfoBarEntry()
 {
     static auto infoText = UsageStatisticPlugin::tr(
                                "We make %1 for you. Would you like to help us make it even better?")
-                               .arg(Core::Constants::IDE_DISPLAY_NAME);
+                               .arg(QGuiApplication::applicationDisplayName());
     static auto customButtonInfoText = UsageStatisticPlugin::tr("Adjust usage statistics settings");
     static auto cancelButtonInfoText = UsageStatisticPlugin::tr("Decide later");
 
