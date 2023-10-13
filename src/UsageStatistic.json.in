@@ -1,11 +1,11 @@
 {
-    \"Name\" : \"UsageStatistic\",
-    \"Version\" : \"$$QTCREATOR_VERSION\",
-    \"CompatVersion\" : \"$$QTCREATOR_COMPAT_VERSION\",
-    \"Vendor\" : \"The Qt Company Ltd\",
-    \"Copyright\" : \"(C) $$QTCREATOR_COPYRIGHT_YEAR The Qt Company Ltd\",
-    \"License\" : \"GNU GPL v3\",
-    \"Description\" : \"This plugin collects statistics on how Qt Creator is used. All statistics are pseudonymous. You can switch off the plugin any time you want.\",
-    \"Url\" : \"https://www.qt.io/\",
-    $$dependencyList
+    "Name" : "UsageStatistic",
+    "Version" : "${IDE_VERSION}",
+    "CompatVersion" : "${IDE_VERSION_COMPAT}",
+    "Vendor" : "The Qt Company Ltd",
+    "Copyright" : "(C) ${IDE_COPYRIGHT_YEAR} The Qt Company Ltd",
+    "License" : "GNU GPL v3",
+    "Description" : "This plugin collects statistics on how Qt Creator is used. All statistics are pseudonymous. You can switch off the plugin any time you want.",
+    "Url" : "https://www.qt.io/",
+    ${IDE_PLUGIN_DEPENDENCIES}
 }
