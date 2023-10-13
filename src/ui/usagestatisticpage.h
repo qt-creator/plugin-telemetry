@@ -45,7 +45,7 @@ signals:
 };
 
 //! Settings page
-class UsageStatisticPage : public Core::IOptionsPage
+class UsageStatisticPage : public QObject, Core::IOptionsPage
 {
     Q_DECLARE_TR_FUNCTIONS(UsageStatistic::Internal::UsageStatisticPage)
 public:

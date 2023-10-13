@@ -28,6 +28,7 @@
 #include <QtCore/QCryptographicHash>
 
 #include <coreplugin/session.h>
+
 #include <projectexplorer/project.h>
 #include <projectexplorer/projectmanager.h>
 
