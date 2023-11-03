@@ -51,6 +51,10 @@ endif()
 
 find_package(QtCreator COMPONENTS Core Debugger ProjectExplorer QtSupport QUIET)
 
+if(BUILD_DESIGNSTUDIO)
+    set(CMAKE_INSTALL_PREFIX ${QtCreator_BINARY_DIR})
+endif()
+
 ExternalProject_Add(plugin
     PREFIX plugin
     SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src"
