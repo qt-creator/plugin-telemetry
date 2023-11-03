@@ -25,8 +25,6 @@
 #include "usagestatisticplugin.h"
 #include "usagestatisticconstants.h"
 
-#include <app/app_version.h>
-
 #include <coreplugin/icore.h>
 #include <coreplugin/icontext.h>
 #include <coreplugin/actionmanager/actionmanager.h>
@@ -66,6 +64,7 @@
 
 #include "common/utils.h"
 
+#include <QGuiApplication>
 #include <QTimer>
 
 namespace UsageStatistic {
@@ -162,8 +161,10 @@ void UsageStatisticPlugin::createUsageStatisticPage()
 {
     m_usageStatisticPage = std::make_unique<UsageStatisticPage>(m_provider);
 
-    connect(m_usageStatisticPage.get(), &UsageStatisticPage::settingsChanged,
-            this, &UsageStatisticPlugin::storeSettings);
+    connect(m_usageStatisticPage->instance(),
+            &SettingsSignals::settingsChanged,
+            this,
+            &UsageStatisticPlugin::storeSettings);
 }
 
 void UsageStatisticPlugin::storeSettings()
@@ -239,7 +240,7 @@ static ::Utils::InfoBarEntry makeInfoBarEntry()
 {
     static auto infoText = UsageStatisticPlugin::tr(
                                "We make %1 for you. Would you like to help us make it even better?")
-                               .arg(Core::Constants::IDE_DISPLAY_NAME);
+                               .arg(QGuiApplication::applicationDisplayName());
     static auto customButtonInfoText = UsageStatisticPlugin::tr("Adjust usage statistics settings");
     static auto cancelButtonInfoText = UsageStatisticPlugin::tr("Decide later");
 

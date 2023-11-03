@@ -75,7 +75,8 @@ BuildSystemSource::BuildSystemSource()
 
     connect(Core::SessionManager::instance(),
             &Core::SessionManager::sessionLoaded,
-            this, &BuildSystemSource::updateProjects);
+            this,
+            &BuildSystemSource::updateProjects);
 }
 
 BuildSystemSource::~BuildSystemSource() = default;

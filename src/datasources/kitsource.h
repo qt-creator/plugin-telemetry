@@ -83,9 +83,9 @@ public: // AbstractDataSource interface
     QVariant data() override;
 
 private:
-    void loadImpl(QSettings *settings);
-    void storeImpl(QSettings *settings);
-    void resetImpl(QSettings *settings);
+    void loadImpl(QSettings *settings) override;
+    void storeImpl(QSettings *settings) override;
+    void resetImpl(QSettings *settings) override;
 
     friend class KitInfo;
     QVariantMap m_buildSuccessesForToolChain;
