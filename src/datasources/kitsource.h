@@ -88,8 +88,8 @@ private:
     void resetImpl(QSettings *settings) override;
 
     friend class KitInfo;
-    QVariantMap m_buildSuccessesForToolChain;
-    QVariantMap m_buildFailsForToolChain;
+    QVariantMap m_buildSuccessesForToolchain;
+    QVariantMap m_buildFailsForToolchain;
 };
 
 } // namespace Internal
