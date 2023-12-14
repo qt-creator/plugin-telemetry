@@ -34,6 +34,7 @@
 #include <projectexplorer/projectexplorerconstants.h>
 #include <projectexplorer/projectmanager.h>
 #include <projectexplorer/target.h>
+#include <projectexplorer/toolchain.h>
 
 #include <qtsupport/qtkitaspect.h>
 
@@ -57,7 +58,7 @@ KitSource::KitSource()
                          const Project *project = ProjectManager::startupProject();
                          const Target *target = project ? project->activeTarget() : nullptr;
                          const Kit *kit = target ? target->kit() : nullptr;
-                         const Toolchain *toolchain = ToolchainKitAspect::toolChain(
+                         const Toolchain *toolchain = ToolchainKitAspect::toolchain(
                              kit, Constants::CXX_LANGUAGE_ID);
                          const Abi abi = toolchain ? toolchain->targetAbi() : Abi();
                          const QString abiName = abi.toString();
@@ -146,7 +147,7 @@ public:
     {
         static const QString compilerKey = QStringLiteral("compiler");
 
-        if (auto toolchain = ToolchainKitAspect::toolChain(&m_kit, Constants::CXX_LANGUAGE_ID)) {
+        if (auto toolchain = ToolchainKitAspect::toolchain(&m_kit, Constants::CXX_LANGUAGE_ID)) {
             const QString abiName = toolchain->targetAbi().toString();
             m_map.insert(compilerKey,
                          QVariantMap{{nameKey(), toolchain->typeDisplayName()},
