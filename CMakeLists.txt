@@ -4,18 +4,20 @@ project(plugin-telemetry)
 
 include(ExternalProject)
 
-# Set common CMAKE_PREFIX_PATH/ CMAKE_PREFIX_PATH_ALT_SEP
-# that can be forwarded to external projects
 list(APPEND CMAKE_PREFIX_PATH
     ${CMAKE_CURRENT_BINARY_DIR}/extra-cmake-modules
     ${CMAKE_CURRENT_BINARY_DIR}/kuserfeedback)
-string(REPLACE ";" "|" CMAKE_PREFIX_PATH_ALT_SEP "${CMAKE_PREFIX_PATH}")
+string(REPLACE ";" "$<SEMICOLON>" CMAKE_PREFIX_PATH_MASKED_SEMICOLON "${CMAKE_PREFIX_PATH}")
+if(CMAKE_OSX_ARCHITECTURES)
+    string(REPLACE ";" "$<SEMICOLON>" CMAKE_OSX_ARCHITECTURES_MASKED_SEMICOLON "-DCMAKE_OSX_ARCHITECTURES=${CMAKE_OSX_ARCHITECTURES}")
+endif()
 
 ExternalProject_Add(extra-cmake-modules
     PREFIX extra-cmake-modules
     SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/extra-cmake-modules"
     CMAKE_ARGS
         -DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/extra-cmake-modules
+        "${CMAKE_OSX_ARCHITECTURES_MASKED_SEMICOLON}"
 )
 
 set(KUSERFEEDBACK_COMPONENTS
@@ -39,8 +41,9 @@ ExternalProject_Add(kuserfeedback
         ${KUSERFEEDBACK_COMPONENTS}
         -DKDE_INSTALL_LIBDIR=lib
         -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
-        -DCMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH_ALT_SEP}
+        -DCMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH_MASKED_SEMICOLON}
         -DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/kuserfeedback
+        "${CMAKE_OSX_ARCHITECTURES_MASKED_SEMICOLON}"
     DEPENDS extra-cmake-modules
 )
 
@@ -63,10 +66,11 @@ ExternalProject_Add(plugin
         -DUSP_AUTH_KEY=${USP_AUTH_KEY}
         -DUSP_SERVER_URL=${USP_SERVER_URL}
         -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
-        -DCMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH_ALT_SEP}
+        -DCMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH_MASKED_SEMICOLON}
         -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}
         -DQtCreator_BINARY_DIR:PATH=${QtCreator_BINARY_DIR}
         -DQTC_MERGE_BINARY_DIR:BOOL=${QTC_MERGE_BINARY_DIR}
+        "${CMAKE_OSX_ARCHITECTURES_MASKED_SEMICOLON}"
     DEPENDS kuserfeedback QtCreator::Core QtCreator::Debugger QtCreator::ProjectExplorer QtCreator::QtSupport
     BUILD_ALWAYS ON
 )
