@@ -35,7 +35,6 @@ set(KUSERFEEDBACK_COMPONENTS
 ExternalProject_Add(kuserfeedback
     PREFIX kuserfeedback
     SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/kuserfeedback"
-    LIST_SEPARATOR |
     CMAKE_ARGS
         ${KUSERFEEDBACK_DEFINES}
         ${KUSERFEEDBACK_COMPONENTS}
@@ -61,7 +60,6 @@ endif()
 ExternalProject_Add(plugin
     PREFIX plugin
     SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src"
-    LIST_SEPARATOR |
     CMAKE_ARGS
         -DUSP_AUTH_KEY=${USP_AUTH_KEY}
         -DUSP_SERVER_URL=${USP_SERVER_URL}
