@@ -34,6 +34,7 @@
 #include <projectexplorer/projectexplorerconstants.h>
 #include <projectexplorer/projectmanager.h>
 #include <projectexplorer/target.h>
+#include <projectexplorer/toolchain.h>
 
 #include <qtsupport/qtkitaspect.h>
 
@@ -57,12 +58,12 @@ KitSource::KitSource()
                          const Project *project = ProjectManager::startupProject();
                          const Target *target = project ? project->activeTarget() : nullptr;
                          const Kit *kit = target ? target->kit() : nullptr;
-                         const ToolChain *toolChain = ToolChainKitAspect::toolChain(
+                         const Toolchain *toolchain = ToolchainKitAspect::toolchain(
                              kit, Constants::CXX_LANGUAGE_ID);
-                         const Abi abi = toolChain ? toolChain->targetAbi() : Abi();
+                         const Abi abi = toolchain ? toolchain->targetAbi() : Abi();
                          const QString abiName = abi.toString();
-                         QVariantMap &bucket = success ? m_buildSuccessesForToolChain
-                                                       : m_buildFailsForToolChain;
+                         QVariantMap &bucket = success ? m_buildSuccessesForToolchain
+                                                       : m_buildFailsForToolchain;
                          bucket[abiName] = bucket.value(abiName, 0).toInt() + 1;
                      });
 }
@@ -83,10 +84,10 @@ static QString kitsInfoKey() { return QStringLiteral("kitsInfo"); }
 static QString buildSuccessesKey() { return  QStringLiteral("buildSuccesses"); }
 static QString buildFailsKey() { return QStringLiteral("buildFails"); }
 
-static QString extractToolChainVersion(const ToolChain &toolChain)
+static QString extractToolchainVersion(const Toolchain &toolchain)
 {
     try {
-        return dynamic_cast<const GccToolChain &>(toolChain).version();
+        return dynamic_cast<const GccToolchain &>(toolchain).version();
     } catch (...) {
         return {};
     }
@@ -95,21 +96,21 @@ static QString extractToolChainVersion(const ToolChain &toolChain)
 void KitSource::loadImpl(QSettings *settings)
 {
     auto setter = ScopedSettingsGroupSetter::forDataSource(*this, *settings);
-    m_buildSuccessesForToolChain = settings->value(buildSuccessesKey(), QVariantMap{}).toMap();
-    m_buildFailsForToolChain = settings->value(buildFailsKey(), QVariantMap{}).toMap();
+    m_buildSuccessesForToolchain = settings->value(buildSuccessesKey(), QVariantMap{}).toMap();
+    m_buildFailsForToolchain = settings->value(buildFailsKey(), QVariantMap{}).toMap();
 }
 
 void KitSource::storeImpl(QSettings *settings)
 {
     auto setter = ScopedSettingsGroupSetter::forDataSource(*this, *settings);
-    settings->setValue(buildSuccessesKey(), m_buildSuccessesForToolChain);
-    settings->setValue(buildFailsKey(), m_buildFailsForToolChain);
+    settings->setValue(buildSuccessesKey(), m_buildSuccessesForToolchain);
+    settings->setValue(buildFailsKey(), m_buildFailsForToolchain);
 }
 
 void KitSource::resetImpl(QSettings *settings)
 {
-    m_buildSuccessesForToolChain.clear();
-    m_buildFailsForToolChain.clear();
+    m_buildSuccessesForToolchain.clear();
+    m_buildFailsForToolchain.clear();
 
     storeImpl(settings);
 }
@@ -146,15 +147,16 @@ public:
     {
         static const QString compilerKey = QStringLiteral("compiler");
 
-        if (auto toolChain = ToolChainKitAspect::toolChain(&m_kit, Constants::CXX_LANGUAGE_ID)) {
-            const QString abiName = toolChain->targetAbi().toString();
-            m_map.insert(compilerKey, QVariantMap{
-                {nameKey(), toolChain->typeDisplayName()},
-                {abiKey(), abiName},
-                {versionKey(), extractToolChainVersion(*toolChain)},
-                {buildSuccessesKey(), m_source.m_buildSuccessesForToolChain.value(abiName).toInt()},
-                {buildFailsKey(), m_source.m_buildFailsForToolChain.value(abiName).toInt()}
-            });
+        if (auto toolchain = ToolchainKitAspect::toolchain(&m_kit, Constants::CXX_LANGUAGE_ID)) {
+            const QString abiName = toolchain->targetAbi().toString();
+            m_map.insert(compilerKey,
+                         QVariantMap{{nameKey(), toolchain->typeDisplayName()},
+                                     {abiKey(), abiName},
+                                     {versionKey(), extractToolchainVersion(*toolchain)},
+                                     {buildSuccessesKey(),
+                                      m_source.m_buildSuccessesForToolchain.value(abiName).toInt()},
+                                     {buildFailsKey(),
+                                      m_source.m_buildFailsForToolchain.value(abiName).toInt()}});
         }
 
         return *this;
