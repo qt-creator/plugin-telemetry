@@ -11,6 +11,9 @@ string(REPLACE ";" "$<SEMICOLON>" CMAKE_PREFIX_PATH_MASKED_SEMICOLON "${CMAKE_PR
 if(CMAKE_OSX_ARCHITECTURES)
     string(REPLACE ";" "$<SEMICOLON>" CMAKE_OSX_ARCHITECTURES_MASKED_SEMICOLON "-DCMAKE_OSX_ARCHITECTURES=${CMAKE_OSX_ARCHITECTURES}")
 endif()
+if(BUILD_PLUGINS)
+    string(REPLACE ";" "$<SEMICOLON>" BUILD_PLUGINS_SEMICOLON "-DBUILD_PLUGINS=${BUILD_PLUGINS}")
+endif()
 
 ExternalProject_Add(extra-cmake-modules
     PREFIX extra-cmake-modules
@@ -69,6 +72,7 @@ ExternalProject_Add(plugin
         -DQtCreator_BINARY_DIR:PATH=${QtCreator_BINARY_DIR}
         -DQTC_MERGE_BINARY_DIR:BOOL=${QTC_MERGE_BINARY_DIR}
         "${CMAKE_OSX_ARCHITECTURES_MASKED_SEMICOLON}"
+        "${BUILD_PLUGINS_SEMICOLON}"
     DEPENDS kuserfeedback QtCreator::Core QtCreator::Debugger QtCreator::ProjectExplorer QtCreator::QtSupport
     BUILD_ALWAYS ON
 )
