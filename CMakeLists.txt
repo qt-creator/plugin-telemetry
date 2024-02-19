@@ -16,6 +16,9 @@ ExternalProject_Add(extra-cmake-modules
     PREFIX extra-cmake-modules
     SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/extra-cmake-modules"
     CMAKE_ARGS
+        -DBUILD_HTML_DOCS=OFF
+        -DBUILD_MAN_DOCS=OFF
+        -DBUILD_QTHELP_DOCS=OFF
         -DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/extra-cmake-modules
         "${CMAKE_OSX_ARCHITECTURES_MASKED_SEMICOLON}"
 )
