@@ -56,7 +56,7 @@ endif()
 
 find_package(QtCreator COMPONENTS Core Debugger ProjectExplorer QtSupport QUIET)
 
-if(BUILD_DESIGNSTUDIO)
+if(QtCreator_BINARY_DIR)
     set(CMAKE_INSTALL_PREFIX ${QtCreator_BINARY_DIR})
 endif()
 
