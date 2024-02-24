@@ -29,7 +29,8 @@
 #include <QCoreApplication>
 #include <QSet>
 
-#include <KUserFeedback/AbstractDataSource>
+//KUserFeedback
+#include <AbstractDataSource>
 
 namespace UsageStatistic {
 namespace Internal {

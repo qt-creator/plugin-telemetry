@@ -33,19 +33,20 @@
 #include <coreplugin/coreconstants.h>
 #include <utils/infobar.h>
 
-#include <KUserFeedback/Provider>
-#include <KUserFeedback/ApplicationVersionSource>
-#include <KUserFeedback/CompilerInfoSource>
-#include <KUserFeedback/CpuInfoSource>
-#include <KUserFeedback/LocaleInfoSource>
-#include <KUserFeedback/OpenGLInfoSource>
-#include <KUserFeedback/PlatformInfoSource>
-#include <KUserFeedback/QPAInfoSource>
-#include <KUserFeedback/QtVersionSource>
-#include <KUserFeedback/ScreenInfoSource>
-#include <KUserFeedback/StartCountSource>
-#include <KUserFeedback/UsageTimeSource>
-#include <KUserFeedback/StyleInfoSource>
+//KUserFeedback
+#include <Provider>
+#include <ApplicationVersionSource>
+#include <CompilerInfoSource>
+#include <CpuInfoSource>
+#include <LocaleInfoSource>
+#include <OpenGLInfoSource>
+#include <PlatformInfoSource>
+#include <QPAInfoSource>
+#include <QtVersionSource>
+#include <ScreenInfoSource>
+#include <StartCountSource>
+#include <UsageTimeSource>
+#include <StyleInfoSource>
 
 #include "datasources/applicationsource.h"
 #include "datasources/buildcountsource.h"

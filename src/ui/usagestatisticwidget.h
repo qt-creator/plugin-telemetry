@@ -29,7 +29,8 @@
 #include <QtWidgets/QWidget>
 #include <QtCore/QHash>
 
-#include <KUserFeedback/Provider>
+//KUserFeedback
+#include <Provider>
 
 namespace KUserFeedback { class FeedbackConfigUiController; }
 

@@ -1,78 +1,69 @@
 cmake_minimum_required(VERSION 3.10)
 
 project(plugin-telemetry)
+find_package(Qt6 COMPONENTS Core Widgets QuickWidgets REQUIRED)
 
-include(ExternalProject)
+set(CMAKE_AUTOMOC ON)
+set(CMAKE_AUTORCC ON)
+set(CMAKE_AUTOUIC ON)
+set(CMAKE_CXX_STANDARD 17)
 
-list(APPEND CMAKE_PREFIX_PATH
-    ${CMAKE_CURRENT_BINARY_DIR}/extra-cmake-modules
-    ${CMAKE_CURRENT_BINARY_DIR}/kuserfeedback)
-string(REPLACE ";" "$<SEMICOLON>" CMAKE_PREFIX_PATH_MASKED_SEMICOLON "${CMAKE_PREFIX_PATH}")
-if(CMAKE_OSX_ARCHITECTURES)
-    string(REPLACE ";" "$<SEMICOLON>" CMAKE_OSX_ARCHITECTURES_MASKED_SEMICOLON "-DCMAKE_OSX_ARCHITECTURES=${CMAKE_OSX_ARCHITECTURES}")
-endif()
-if(BUILD_PLUGINS)
-    string(REPLACE ";" "$<SEMICOLON>" BUILD_PLUGINS_SEMICOLON "-DBUILD_PLUGINS=${BUILD_PLUGINS}")
-endif()
+# pre-configure and install extra-cmake-modules (ECM) to ensure module availability for
+# kuserfeedback configuration
+# with ExternalProject_Add it would install it during build, which is too late
+set(ECM_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/extra-cmake-modules")
+set(ECM_BUILD_DIR "${CMAKE_BINARY_DIR}/ecm_build")
+set(ECM_INSTALL_DIR "${CMAKE_BINARY_DIR}/ecm_install")
 
-ExternalProject_Add(extra-cmake-modules
-    PREFIX extra-cmake-modules
-    SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/extra-cmake-modules"
-    CMAKE_ARGS
-        -DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/extra-cmake-modules
-        "${CMAKE_OSX_ARCHITECTURES_MASKED_SEMICOLON}"
-)
-
-set(KUSERFEEDBACK_COMPONENTS
-    -DBUILD_SHARED_LIBS=OFF
-    -DBUILD_TESTING=OFF
-    -DENABLE_SURVEY_TARGET_EXPRESSIONS=OFF
-    -DENABLE_PHP=OFF
-    -DENABLE_PHP_UNIT=OFF
-    -DENABLE_DOCS=OFF
-    -DENABLE_CONSOLE=OFF
-    -DENABLE_CLI=OFF
-    -DBUILD_SHARED_LIBS=OFF
-)
-
-ExternalProject_Add(kuserfeedback
-    PREFIX kuserfeedback
-    SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/kuserfeedback"
-    CMAKE_ARGS
-        ${KUSERFEEDBACK_DEFINES}
-        ${KUSERFEEDBACK_COMPONENTS}
-        -DKDE_INSTALL_LIBDIR=lib
-        -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
-        -DCMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH_MASKED_SEMICOLON}
-        -DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/kuserfeedback
-        "${CMAKE_OSX_ARCHITECTURES_MASKED_SEMICOLON}"
-    DEPENDS extra-cmake-modules
-)
-
-if(NOT DEFINED USP_SERVER_URL OR NOT DEFINED USP_AUTH_KEY)
-    message(WARNING "Collected data won't be sent
-Define both USP_SERVER_URL and USP_AUTH_KEY to enable data submission")
+if(NOT EXISTS "${ECM_BUILD_DIR}/ECMConfig.cmake")
+    file(MAKE_DIRECTORY ${ECM_BUILD_DIR})
+    execute_process(
+        COMMAND ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}" -DCMAKE_INSTALL_PREFIX:PATH=${ECM_INSTALL_DIR} ${ECM_SOURCE_DIR}
+        WORKING_DIRECTORY ${ECM_BUILD_DIR}
+        RESULT_VARIABLE result
+    )
+    if(result EQUAL "0")
+        execute_process(
+            COMMAND ${CMAKE_COMMAND} --build . --target install
+            WORKING_DIRECTORY ${ECM_BUILD_DIR}
+            RESULT_VARIABLE result
+        )
+    endif()
 endif()
 
-find_package(QtCreator COMPONENTS Core Debugger ProjectExplorer QtSupport QUIET)
+list(APPEND CMAKE_PREFIX_PATH ${ECM_INSTALL_DIR})
+set(BUILD_SHARED_LIBS OFF CACHE BOOL "Build shared libraries" FORCE)
+set(BUILD_TESTING OFF CACHE BOOL "Build tests" FORCE)
+set(ENABLE_SURVEY_TARGET_EXPRESSIONS OFF CACHE BOOL "Enable survey target expressions" FORCE)
+set(ENABLE_PHP OFF CACHE BOOL "Enable PHP" FORCE)
+set(ENABLE_PHP_UNIT OFF CACHE BOOL "Enable PHP unit" FORCE)
+set(ENABLE_DOCS OFF CACHE BOOL "Enable documentation" FORCE)
+set(ENABLE_CONSOLE OFF CACHE BOOL "Enable console" FORCE)
+set(ENABLE_CLI OFF CACHE BOOL "Enable CLI" FORCE)
+set(KDE_INSTALL_LIBDIR lib CACHE STRING "Lib install dir" FORCE)
 
-if(QtCreator_BINARY_DIR)
-    set(CMAKE_INSTALL_PREFIX ${QtCreator_BINARY_DIR})
+# we do not install it so we can not use #include <KUserFeedback/*>
+# if we want to keep that includes we would need similar approach like ECMConfig
+add_subdirectory(3rdparty/kuserfeedback)
+
+target_include_directories(KUserFeedbackCore PRIVATE
+  ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/kuserfeedback
+  ${CMAKE_CURRENT_BINARY_DIR}/3rdparty/kuserfeedback
+)
+
+target_include_directories(KUserFeedbackCommon PRIVATE
+  ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/kuserfeedback
+  ${CMAKE_CURRENT_BINARY_DIR}/3rdparty/kuserfeedback
+)
+
+# TODO: should we fix this in kuserfeedback?
+if(MSVC)
+  target_compile_options(KUserFeedbackCommon PRIVATE /wd4267 /wd4996)
+  target_compile_options(KUserFeedbackCore PRIVATE /wd4267)
+else()
+  target_compile_options(KUserFeedbackCommon PRIVATE -Wno-sign-conversion -Wno-deprecated-declarations)
+  target_compile_options(KUserFeedbackCore PRIVATE -Wno-sign-conversion)
 endif()
 
-ExternalProject_Add(plugin
-    PREFIX plugin
-    SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src"
-    CMAKE_ARGS
-        -DUSP_AUTH_KEY=${USP_AUTH_KEY}
-        -DUSP_SERVER_URL=${USP_SERVER_URL}
-        -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
-        -DCMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH_MASKED_SEMICOLON}
-        -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}
-        -DQtCreator_BINARY_DIR:PATH=${QtCreator_BINARY_DIR}
-        -DQTC_MERGE_BINARY_DIR:BOOL=${QTC_MERGE_BINARY_DIR}
-        "${CMAKE_OSX_ARCHITECTURES_MASKED_SEMICOLON}"
-        "${BUILD_PLUGINS_SEMICOLON}"
-    DEPENDS kuserfeedback QtCreator::Core QtCreator::Debugger QtCreator::ProjectExplorer QtCreator::QtSupport
-    BUILD_ALWAYS ON
-)
+find_package(QtCreator REQUIRED)
+add_subdirectory(src)

@@ -24,7 +24,8 @@
 ****************************************************************************/
 #pragma once
 
-#include <KUserFeedback/AbstractJsonDataSubmitter>
+//KUserFeedback
+#include <AbstractJsonDataSubmitter>
 
 namespace UsageStatistic {
 namespace Internal {

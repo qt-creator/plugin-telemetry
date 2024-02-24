@@ -32,7 +32,8 @@
 #include <extensionsystem/pluginspec.h>
 #include <QtQuick/QQuickItem>
 
-#include <KUserFeedback/Provider>
+//KUserFeedback
+#include <Provider>
 
 namespace UsageStatistic {
 namespace Internal {

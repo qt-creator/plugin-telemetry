@@ -26,7 +26,8 @@
 
 #include <QSettings>
 
-#include <KUserFeedback/AbstractDataSource>
+//KUserFeedback
+#include <AbstractDataSource>
 
 #include "usagestatisticconstants.h"
 

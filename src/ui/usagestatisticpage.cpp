@@ -24,7 +24,8 @@
 ****************************************************************************/
 #include "usagestatisticpage.h"
 
-#include <KUserFeedback/AbstractDataSource>
+//KUserFeedback
+#include <AbstractDataSource>
 
 #include "usagestatisticwidget.h"
 #include "usagestatisticconstants.h"

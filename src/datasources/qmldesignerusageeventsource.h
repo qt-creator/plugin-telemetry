@@ -24,7 +24,8 @@
 ****************************************************************************/
 #pragma once
 
-#include <KUserFeedback/AbstractDataSource>
+//KUserFeedback
+#include <AbstractDataSource>
 
 #include <QHash>
 #include <QMap>

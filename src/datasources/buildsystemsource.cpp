@@ -32,7 +32,8 @@
 #include <projectexplorer/project.h>
 #include <projectexplorer/projectmanager.h>
 
-#include <KUserFeedback/Provider>
+//KUserFeedback
+#include <Provider>
 
 #include "common/scopedsettingsgroupsetter.h"
 

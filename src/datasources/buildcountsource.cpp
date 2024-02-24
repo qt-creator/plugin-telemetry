@@ -30,7 +30,8 @@
 
 #include <projectexplorer/buildmanager.h>
 
-#include <KUserFeedback/Provider>
+//KUserFeedback
+#include <Provider>
 
 namespace UsageStatistic {
 namespace Internal {
