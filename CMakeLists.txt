@@ -45,6 +45,7 @@ set(KDE_INSTALL_LIBDIR lib CACHE STRING "Lib install dir" FORCE)
 # we do not install it so we can not use #include <KUserFeedback/*>
 # if we want to keep that includes we would need similar approach like ECMConfig
 add_subdirectory(3rdparty/kuserfeedback)
+set_target_properties(KUserFeedbackQml PROPERTIES EXCLUDE_FROM_ALL TRUE)
 
 target_include_directories(KUserFeedbackCore PRIVATE
   ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/kuserfeedback
