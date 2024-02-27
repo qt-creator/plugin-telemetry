@@ -62,7 +62,7 @@ if(MSVC)
   target_compile_options(KUserFeedbackCommon PRIVATE /wd4267 /wd4996)
   target_compile_options(KUserFeedbackCore PRIVATE /wd4267)
 else()
-  target_compile_options(KUserFeedbackCommon PRIVATE -Wno-sign-conversion -Wno-deprecated-declarations)
+  target_compile_options(KUserFeedbackCommon PRIVATE -Wno-sign-conversion -Wno-deprecated-declarations -Wno-unused-parameter -Wno-unused-variable -Wno-unused-but-set-variable -Wno-unused-function)
   target_compile_options(KUserFeedbackCore PRIVATE -Wno-sign-conversion)
 endif()
 
