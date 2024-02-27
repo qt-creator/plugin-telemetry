@@ -40,12 +40,12 @@ set(ENABLE_PHP_UNIT OFF CACHE BOOL "Enable PHP unit" FORCE)
 set(ENABLE_DOCS OFF CACHE BOOL "Enable documentation" FORCE)
 set(ENABLE_CONSOLE OFF CACHE BOOL "Enable console" FORCE)
 set(ENABLE_CLI OFF CACHE BOOL "Enable CLI" FORCE)
+set(ENABLE_QML OFF CACHE BOOL "Enable QML plugin" FORCE)
 set(KDE_INSTALL_LIBDIR lib CACHE STRING "Lib install dir" FORCE)
 
 # we do not install it so we can not use #include <KUserFeedback/*>
 # if we want to keep that includes we would need similar approach like ECMConfig
 add_subdirectory(3rdparty/kuserfeedback)
-set_target_properties(KUserFeedbackQml PROPERTIES EXCLUDE_FROM_ALL TRUE)
 
 target_include_directories(KUserFeedbackCore PRIVATE
   ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/kuserfeedback
