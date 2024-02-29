@@ -43,6 +43,17 @@ set(ENABLE_CLI OFF CACHE BOOL "Enable CLI" FORCE)
 set(ENABLE_QML OFF CACHE BOOL "Enable QML plugin" FORCE)
 set(KDE_INSTALL_LIBDIR lib CACHE STRING "Lib install dir" FORCE)
 
+#avoid install pollution
+get_filename_component(CURRENT_BUILD_DIR_NAME ${CMAKE_CURRENT_BINARY_DIR} NAME)
+get_filename_component(KDE_TEMP_INSTALL_DIR "${CMAKE_BINARY_DIR}/../${CURRENT_BUILD_DIR_NAME}_temp_kde_install" REALPATH)
+set(KDE_INSTALL_LIBDIR "${KDE_TEMP_INSTALL_DIR}/lib")
+set(KDE_INSTALL_BINDIR "${KDE_TEMP_INSTALL_DIR}/bin")
+set(KDE_INSTALL_INCLUDEDIR "${KDE_TEMP_INSTALL_DIR}/include")
+set(KDE_INSTALL_LOGGINGCATEGORIESDIR "${KDE_TEMP_INSTALL_DIR}/qlogging-categories5")
+
+#overwrite internal used variable to not get the unnecessary mkspecs/modules content
+set(ECM_MKSPECS_INSTALL_DIR "${KDE_TEMP_INSTALL_DIR}/mkspecs/modules" CACHE PATH "Custom mkspecs install directory" FORCE)
+
 # we do not install it so we can not use #include <KUserFeedback/*>
 # if we want to keep that includes we would need similar approach like ECMConfig
 add_subdirectory(3rdparty/kuserfeedback)
