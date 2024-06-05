@@ -29,7 +29,8 @@
 #include <extensionsystem/pluginmanager.h>
 #include <extensionsystem/pluginspec.h>
 
-#include <KUserFeedback/Provider>
+//KUserFeedback
+#include <Provider>
 
 namespace UsageStatistic {
 namespace Internal {

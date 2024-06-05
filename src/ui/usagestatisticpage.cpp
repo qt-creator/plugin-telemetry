@@ -24,10 +24,13 @@
 ****************************************************************************/
 #include "usagestatisticpage.h"
 
-#include <KUserFeedback/AbstractDataSource>
+//KUserFeedback
+#include <AbstractDataSource>
 
 #include "usagestatisticwidget.h"
 #include "usagestatisticconstants.h"
+
+#include <utils/theme/theme.h>
 
 namespace UsageStatistic {
 namespace Internal {
@@ -70,7 +73,7 @@ void UsageStatisticPage::apply()
     m_provider->setTelemetryMode(settings.telemetryMode);
     applyDataSourcesActiveStatuses(settings.activeStatusesById, *m_provider);
 
-    Q_EMIT settingsChanged();
+    Q_EMIT m_signals.settingsChanged();
 }
 
 void UsageStatisticPage::finish()
@@ -82,8 +85,7 @@ void UsageStatisticPage::configure()
 {
     setId(Constants::USAGE_STATISTIC_PAGE_ID);
     setCategory(Constants::TELEMETRY_SETTINGS_CATEGORY_ID);
-    setCategoryIcon(Utils::Icon({{":/usagestatistic/images/settingscategory_usagestatistic.png",
-                    Utils::Theme::PanelTextColorDark}}, Utils::Icon::Tint));
+    setCategoryIconPath(":/usagestatistic/images/settingscategory_usagestatistic.png");
 
     setDisplayName(tr("Usage Statistics"));
     setDisplayCategory(tr("Telemetry"));

@@ -29,7 +29,8 @@
 #include <coreplugin/editormanager/editormanager.h>
 #include <coreplugin/modemanager.h>
 
-#include <KUserFeedback/Provider>
+//KUserFeedback
+#include <Provider>
 
 #include "common/scopedsettingsgroupsetter.h"
 

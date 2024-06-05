@@ -27,8 +27,10 @@
 #include <QtCore/QSettings>
 #include <QtCore/QRegularExpression>
 
+#include <projectexplorer//session.h>
+
 #include <projectexplorer/project.h>
-#include <projectexplorer/session.h>
+#include <projectexplorer/projectmanager.h>
 
 #include <common/scopedsettingsgroupsetter.h>
 
@@ -42,15 +44,18 @@ ExamplesDataSource::ExamplesDataSource()
 {
     connect(ProjectExplorer::SessionManager::instance(),
             &ProjectExplorer::SessionManager::startupProjectChanged,
-            this, &ExamplesDataSource::updateOpenedExamples);
+            this,
+            &ExamplesDataSource::updateOpenedExamples);
 
     connect(ProjectExplorer::SessionManager::instance(),
             &ProjectExplorer::SessionManager::projectAdded,
-            this, &ExamplesDataSource::updateOpenedExamples);
+            this,
+            &ExamplesDataSource::updateOpenedExamples);
 
     connect(ProjectExplorer::SessionManager::instance(),
             &ProjectExplorer::SessionManager::sessionLoaded,
-            this, &ExamplesDataSource::updateOpenedExamples);
+            this,
+            &ExamplesDataSource::updateOpenedExamples);
 }
 
 ExamplesDataSource::~ExamplesDataSource() = default;

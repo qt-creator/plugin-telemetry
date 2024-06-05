@@ -27,7 +27,8 @@
 #include <QtCore/QVariant>
 #include <QtCore/QSettings>
 
-#include <KUserFeedback/Provider>
+//KUserFeedback
+#include <Provider>
 
 #include <common/scopedsettingsgroupsetter.h>
 

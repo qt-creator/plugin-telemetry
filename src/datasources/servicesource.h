@@ -29,8 +29,9 @@
 #include <QtCore/QVariantMap>
 #include <QtCore/QUuid>
 
-#include <KUserFeedback/AbstractDataSource>
-#include <KUserFeedback/Provider>
+//KUserFeedback
+#include <AbstractDataSource>
+#include <Provider>
 
 namespace UsageStatistic {
 namespace Internal {

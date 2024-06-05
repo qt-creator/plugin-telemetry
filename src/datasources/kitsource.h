@@ -26,7 +26,8 @@
 
 #include <QVariantMap>
 
-#include <KUserFeedback/AbstractDataSource>
+//KUserFeedback
+#include <AbstractDataSource>
 
 namespace UsageStatistic {
 namespace Internal {
@@ -83,13 +84,13 @@ public: // AbstractDataSource interface
     QVariant data() override;
 
 private:
-    void loadImpl(QSettings *settings);
-    void storeImpl(QSettings *settings);
-    void resetImpl(QSettings *settings);
+    void loadImpl(QSettings *settings) override;
+    void storeImpl(QSettings *settings) override;
+    void resetImpl(QSettings *settings) override;
 
     friend class KitInfo;
-    QVariantMap m_buildSuccessesForToolChain;
-    QVariantMap m_buildFailsForToolChain;
+    QVariantMap m_buildSuccessesForToolchain;
+    QVariantMap m_buildFailsForToolchain;
 };
 
 } // namespace Internal

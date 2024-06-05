@@ -25,8 +25,6 @@
 #include "usagestatisticplugin.h"
 #include "usagestatisticconstants.h"
 
-#include <app/app_version.h>
-
 #include <coreplugin/icore.h>
 #include <coreplugin/icontext.h>
 #include <coreplugin/actionmanager/actionmanager.h>
@@ -35,21 +33,22 @@
 #include <coreplugin/coreconstants.h>
 #include <utils/infobar.h>
 
-#include <KUserFeedback/Provider>
-#include <KUserFeedback/ApplicationVersionSource>
-#include <KUserFeedback/CompilerInfoSource>
-#include <KUserFeedback/CpuInfoSource>
-#include <KUserFeedback/LocaleInfoSource>
-#include <KUserFeedback/OpenGLInfoSource>
-#include <KUserFeedback/PlatformInfoSource>
-#include <KUserFeedback/QPAInfoSource>
-#include <KUserFeedback/QtVersionSource>
-#include <KUserFeedback/ScreenInfoSource>
-#include <KUserFeedback/StartCountSource>
-#include <KUserFeedback/UsageTimeSource>
-#include <KUserFeedback/StyleInfoSource>
+//KUserFeedback
+#include <Provider>
+#include <ApplicationVersionSource>
+#include <CompilerInfoSource>
+#include <CpuInfoSource>
+#include <LocaleInfoSource>
+#include <OpenGLInfoSource>
+#include <PlatformInfoSource>
+#include <QPAInfoSource>
+#include <QtVersionSource>
+#include <ScreenInfoSource>
+#include <StartCountSource>
+#include <UsageTimeSource>
+#include <StyleInfoSource>
 
-#include "datasources/applicationsource.h".h "
+#include "datasources/applicationsource.h"
 #include "datasources/buildcountsource.h"
 #include "datasources/buildsystemsource.h"
 #include "datasources/examplesdatasource.h"
@@ -66,12 +65,20 @@
 
 #include "common/utils.h"
 
+#include <QGuiApplication>
+#include <QTimer>
+
 namespace UsageStatistic {
 namespace Internal {
 
 UsageStatisticPlugin::UsageStatisticPlugin() = default;
 
 UsageStatisticPlugin::~UsageStatisticPlugin() = default;
+
+static bool telemetryLevelNotSet(const KUserFeedback::Provider &provider)
+{
+    return provider.telemetryMode() == KUserFeedback::Provider::NoTelemetry;
+}
 
 bool UsageStatisticPlugin::initialize(const QStringList &arguments, QString *errorString)
 {
@@ -111,7 +118,7 @@ static void addQtCreatorDataSources(KUserFeedback::Provider &provider)
     provider.addDataSource(new ExamplesDataSource);
     provider.addDataSource(new KitSource);
     provider.addDataSource(new QmlDesignerUsageTimeSource);
-    provider.addDataSource(new QmlDesignerUsageEventSource);
+    provider.addDataSource(new QmlDesignerUsageEventSource(!telemetryLevelNotSet(provider)));
 }
 
 static void addServiceDataSource(const std::shared_ptr<KUserFeedback::Provider> &provider)
@@ -136,12 +143,16 @@ bool UsageStatisticPlugin::delayedInitialize()
     restoreSettings();
 
     showFirstTimeMessage();
+    submitDataOnFirstStart();
 
     return true;
 }
 
 ExtensionSystem::IPlugin::ShutdownFlag UsageStatisticPlugin::aboutToShutdown()
 {
+    if (m_provider)
+        m_provider->submit();
+
     storeSettings();
 
     return SynchronousShutdown;
@@ -151,8 +162,10 @@ void UsageStatisticPlugin::createUsageStatisticPage()
 {
     m_usageStatisticPage = std::make_unique<UsageStatisticPage>(m_provider);
 
-    connect(m_usageStatisticPage.get(), &UsageStatisticPage::settingsChanged,
-            this, &UsageStatisticPlugin::storeSettings);
+    connect(m_usageStatisticPage->instance(),
+            &SettingsSignals::settingsChanged,
+            this,
+            &UsageStatisticPlugin::storeSettings);
 }
 
 void UsageStatisticPlugin::storeSettings()
@@ -171,7 +184,10 @@ void UsageStatisticPlugin::restoreSettings()
 
 static constexpr int encouragementTimeSec() { return 1800; }
 static constexpr int encouragementIntervalDays() { return 1; }
-static constexpr int submissionIntervalDays() { return 10; }
+static constexpr int submissionIntervalDays()
+{
+    return 1;
+}
 
 void UsageStatisticPlugin::createProvider()
 {
@@ -204,11 +220,6 @@ static bool runFirstTime(const KUserFeedback::Provider &provider)
     return false;
 }
 
-static bool telemetryLevelNotSet(const KUserFeedback::Provider &provider)
-{
-    return provider.telemetryMode() == KUserFeedback::Provider::NoTelemetry;
-}
-
 void UsageStatisticPlugin::showFirstTimeMessage()
 {
     if (m_provider && runFirstTime(*m_provider) && telemetryLevelNotSet(*m_provider)) {
@@ -216,11 +227,21 @@ void UsageStatisticPlugin::showFirstTimeMessage()
     }
 }
 
+void UsageStatisticPlugin::submitDataOnFirstStart()
+{
+    /*
+     * On first start submit data after 10 minutes.
+     */
+
+    if (m_provider && runFirstTime(*m_provider) && !telemetryLevelNotSet(*m_provider))
+        QTimer::singleShot(1000 * 60 * 10, this, [this]() { m_provider->submit(); });
+}
+
 static ::Utils::InfoBarEntry makeInfoBarEntry()
 {
     static auto infoText = UsageStatisticPlugin::tr(
                                "We make %1 for you. Would you like to help us make it even better?")
-                               .arg(Core::Constants::IDE_DISPLAY_NAME);
+                               .arg(QGuiApplication::applicationDisplayName());
     static auto customButtonInfoText = UsageStatisticPlugin::tr("Adjust usage statistics settings");
     static auto cancelButtonInfoText = UsageStatisticPlugin::tr("Decide later");
 

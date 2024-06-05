@@ -3,13 +3,13 @@
 
 #include "applicationsource.h"
 
-#include <app/app_version.h>
 #include <coreplugin/coreconstants.h>
 
 #include "common/scopedsettingsgroupsetter.h"
 #include "common/utils.h"
 
-#include <QtCore/QSettings>
+#include <QGuiApplication>
+#include <QSettings>
 
 namespace UsageStatistic {
 namespace Internal {
@@ -33,8 +33,8 @@ QString ApplicationSource::description() const
 QVariant ApplicationSource::data()
 {
     return QVariantMap{
-        {"applicationName", Core::Constants::IDE_DISPLAY_NAME},
-        {"applicationVersion", Core::Constants::IDE_VERSION_LONG},
+        {"applicationName", QGuiApplication::applicationDisplayName()},
+        {"applicationVersion", QGuiApplication::applicationVersion()},
 
     };
 }

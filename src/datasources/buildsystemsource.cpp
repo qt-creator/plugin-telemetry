@@ -27,10 +27,13 @@
 #include <QtCore/QSettings>
 #include <QtCore/QCryptographicHash>
 
-#include <projectexplorer/project.h>
 #include <projectexplorer/session.h>
 
-#include <KUserFeedback/Provider>
+#include <projectexplorer/project.h>
+#include <projectexplorer/projectmanager.h>
+
+//KUserFeedback
+#include <Provider>
 
 #include "common/scopedsettingsgroupsetter.h"
 
@@ -68,11 +71,13 @@ BuildSystemSource::BuildSystemSource()
 {
     connect(ProjectExplorer::SessionManager::instance(),
             &ProjectExplorer::SessionManager::projectAdded,
-            this, &BuildSystemSource::updateProjects);
+            this,
+            &BuildSystemSource::updateProjects);
 
     connect(ProjectExplorer::SessionManager::instance(),
             &ProjectExplorer::SessionManager::sessionLoaded,
-            this, &BuildSystemSource::updateProjects);
+            this,
+            &BuildSystemSource::updateProjects);
 }
 
 BuildSystemSource::~BuildSystemSource() = default;

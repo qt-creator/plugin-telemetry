@@ -29,8 +29,9 @@
 #include <QtCore/QJsonArray>
 #include <QtCore/QJsonDocument>
 
-#include <KUserFeedback/FeedbackConfigUiController>
-#include <KUserFeedback/AbstractDataSource>
+//KUserFeedback
+#include <FeedbackConfigUiController>
+#include <AbstractDataSource>
 
 #include "usagestatisticconstants.h"
 

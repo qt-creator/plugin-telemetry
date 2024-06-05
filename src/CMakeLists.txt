@@ -1,20 +1,7 @@
-cmake_minimum_required(VERSION 3.9)
-
-project(UsageStatistic)
-
-set(CMAKE_AUTOMOC ON)
-set(CMAKE_AUTORCC ON)
-set(CMAKE_AUTOUIC ON)
-set(CMAKE_CXX_STANDARD 17)
-
-find_package(QtCreator COMPONENTS Core TextEditor ProjectExplorer VcsBase REQUIRED)
-find_package(Qt5 COMPONENTS Widgets REQUIRED)
-find_package(KUserFeedback REQUIRED)
-
 add_qtc_plugin(UsageStatistic
     PLUGIN_DEPENDS
         QtCreator::Core QtCreator::Debugger QtCreator::ProjectExplorer QtCreator::QtSupport
-    DEPENDS Qt5::Widgets Qt5::QuickWidgets QtCreator::ExtensionSystem QtCreator::Utils KUserFeedbackCore KUserFeedbackWidgets
+    DEPENDS Qt::Widgets Qt::QuickWidgets QtCreator::ExtensionSystem QtCreator::Utils KUserFeedbackCore KUserFeedbackWidgets
     SOURCES
         usagestatisticplugin.cpp
         datasources/qtclicensesource.cpp
