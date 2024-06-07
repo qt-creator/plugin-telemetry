@@ -47,7 +47,6 @@ signals:
 //! Settings page
 class UsageStatisticPage : Core::IOptionsPage
 {
-    Q_DECLARE_TR_FUNCTIONS(UsageStatistic::Internal::UsageStatisticPage)
 public:
     UsageStatisticPage(std::shared_ptr<KUserFeedback::Provider> provider);
     ~UsageStatisticPage() override;
