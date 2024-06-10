@@ -26,6 +26,7 @@
 
 #include <memory>
 
+#include <QCoreApplication>
 #include <QtCore/QPointer>
 
 #include <coreplugin/dialogs/ioptionspage.h>
