@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <QCoreApplication>
 #include <QtCore/QVariantMap>
 
 //KUserFeedback

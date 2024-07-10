@@ -26,8 +26,9 @@
 
 #include <memory>
 
-#include <QtCore/QVariantMap>
+#include <QCoreApplication>
 #include <QtCore/QUuid>
+#include <QtCore/QVariantMap>
 
 //KUserFeedback
 #include <AbstractDataSource>
