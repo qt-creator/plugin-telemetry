@@ -28,6 +28,7 @@
 #include <AbstractDataSource>
 
 #include "usagestatisticwidget.h"
+#include "usagestatisticsimplewidget.h"
 #include "usagestatisticconstants.h"
 
 #include <utils/theme/theme.h>
@@ -35,8 +36,9 @@
 namespace UsageStatistic {
 namespace Internal {
 
-UsageStatisticPage::UsageStatisticPage(std::shared_ptr<KUserFeedback::Provider> provider)
+UsageStatisticPage::UsageStatisticPage(std::shared_ptr<KUserFeedback::Provider> provider, bool simplifiedSettings)
     : m_provider(std::move(provider))
+    , m_simplifiedSettings(simplifiedSettings)
 {
     configure();
 }
@@ -45,12 +47,18 @@ UsageStatisticPage::~UsageStatisticPage() = default;
 
 QWidget *UsageStatisticPage::widget()
 {
-    if (!m_feedbackWidget) {
-        m_feedbackWidget = std::make_unique<UsageStatisticWidget>(m_provider);
-        m_feedbackWidget->updateSettings();
-    }
+    if (m_simplifiedSettings) {
+        if (!m_simpleWidget)
+            m_simpleWidget = std::make_unique<UsageStatisticSimpleWidget>(m_provider);
 
-    return m_feedbackWidget.get();
+        return m_simpleWidget.get();
+    } else {
+        if (!m_feedbackWidget)
+            m_feedbackWidget = std::make_unique<UsageStatisticWidget>(m_provider);
+
+        m_feedbackWidget->updateSettings();
+        return m_feedbackWidget.get();
+    }
 }
 
 static void applyDataSourcesActiveStatuses(const QHash<QString, bool> &statuses,
@@ -68,16 +76,19 @@ static void applyDataSourcesActiveStatuses(const QHash<QString, bool> &statuses,
 
 void UsageStatisticPage::apply()
 {
-    auto settings = m_feedbackWidget->settings();
+    if (m_feedbackWidget) {
+        auto settings = m_feedbackWidget->settings();
 
-    m_provider->setTelemetryMode(settings.telemetryMode);
-    applyDataSourcesActiveStatuses(settings.activeStatusesById, *m_provider);
+        m_provider->setTelemetryMode(settings.telemetryMode);
+        applyDataSourcesActiveStatuses(settings.activeStatusesById, *m_provider);
 
-    Q_EMIT m_signals.settingsChanged();
+        Q_EMIT m_signals.settingsChanged();
+    }
 }
 
 void UsageStatisticPage::finish()
 {
+    m_simpleWidget.reset();
     m_feedbackWidget.reset();
 }
 

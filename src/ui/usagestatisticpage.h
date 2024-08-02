@@ -37,6 +37,7 @@ namespace UsageStatistic {
 namespace Internal {
 
 class UsageStatisticWidget;
+class UsageStatisticSimpleWidget;
 
 class SettingsSignals : public QObject
 {
@@ -50,7 +51,7 @@ class UsageStatisticPage : public QObject, Core::IOptionsPage
 {
     Q_DECLARE_TR_FUNCTIONS(UsageStatistic::Internal::UsageStatisticPage)
 public:
-    UsageStatisticPage(std::shared_ptr<KUserFeedback::Provider> provider);
+    UsageStatisticPage(std::shared_ptr<KUserFeedback::Provider> provider, bool simplifiedSettings);
     ~UsageStatisticPage() override;
 
 public: // IOptionsPage interface
@@ -62,8 +63,11 @@ public: // IOptionsPage interface
 
 private: // Data
     std::unique_ptr<UsageStatisticWidget> m_feedbackWidget;
+    std::unique_ptr<UsageStatisticSimpleWidget> m_simpleWidget;
     std::shared_ptr<KUserFeedback::Provider> m_provider;
     SettingsSignals m_signals;
+
+    bool m_simplifiedSettings = false; // switches to a simple settings widget in the case of QDS
 
 private: // Methods
     void configure();

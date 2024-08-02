@@ -31,7 +31,10 @@
 #include <coreplugin/actionmanager/command.h>
 #include <coreplugin/actionmanager/actioncontainer.h>
 #include <coreplugin/coreconstants.h>
+#include <extensionsystem/pluginspec.h>
+#include <extensionsystem/pluginmanager.h>
 #include <utils/infobar.h>
+#include <utils/algorithm.h>
 
 //KUserFeedback
 #include <Provider>
@@ -67,6 +70,9 @@
 
 #include <QGuiApplication>
 #include <QTimer>
+
+using namespace Core;
+using namespace Utils;
 
 namespace UsageStatistic {
 namespace Internal {
@@ -158,9 +164,22 @@ ExtensionSystem::IPlugin::ShutdownFlag UsageStatisticPlugin::aboutToShutdown()
     return SynchronousShutdown;
 }
 
+void UsageStatisticPlugin::useSimpleUi(bool val)
+{
+    m_simplifiedSettings = true;
+}
+
 void UsageStatisticPlugin::createUsageStatisticPage()
 {
-    m_usageStatisticPage = std::make_unique<UsageStatisticPage>(m_provider);
+    // check if StudioUsageStatistic has created the settings page
+    bool telemetryPageCreated = ::Utils::anyOf(IOptionsPage::allOptionsPages(), [](const auto& page) {
+        return page->id() == "UsageStatistic";
+    });
+
+    if (telemetryPageCreated)
+        return;
+
+    m_usageStatisticPage = std::make_unique<UsageStatisticPage>(m_provider, m_simplifiedSettings);
 
     connect(m_usageStatisticPage->instance(),
             &SettingsSignals::settingsChanged,
@@ -189,6 +208,16 @@ static constexpr int submissionIntervalDays()
     return 1;
 }
 
+static KUserFeedback::Provider::TelemetryMode getTelemetryStatus()
+{
+    bool telemetrySettings = ICore::settings()->value("Telemetry", false).toBool();
+
+    if (telemetrySettings)
+        return KUserFeedback::Provider::DetailedUsageStatistics;
+
+    return KUserFeedback::Provider::NoTelemetry;
+}
+
 void UsageStatisticPlugin::createProvider()
 {
     Q_ASSERT(!m_provider);
@@ -202,6 +231,9 @@ void UsageStatisticPlugin::createProvider()
     m_provider->setEncouragementInterval(encouragementIntervalDays());
 
     m_provider->setSubmissionInterval(submissionIntervalDays());
+
+    if (m_simplifiedSettings)
+        m_provider->setTelemetryMode(getTelemetryStatus());
 }
 
 static bool runFirstTime(const KUserFeedback::Provider &provider)

@@ -51,6 +51,7 @@ public:
     void extensionsInitialized() override;
     bool delayedInitialize() override;
     ShutdownFlag aboutToShutdown() override;
+    Q_INVOKABLE void useSimpleUi(bool);
 
 private:
     void createUsageStatisticPage();
@@ -64,6 +65,8 @@ private:
 private:
     std::shared_ptr<KUserFeedback::Provider> m_provider;
     std::unique_ptr<UsageStatisticPage> m_usageStatisticPage;
+
+    bool m_simplifiedSettings = false; // switches to a simple settings widget in the case of QDS
 };
 
 } // namespace Internal

@@ -18,6 +18,7 @@ add_qtc_plugin(UsageStatistic
         datasources/applicationsource.cpp
         ui/usagestatisticpage.cpp
         ui/usagestatisticwidget.cpp
+        ui/usagestatisticsimplewidget.cpp
         services/datasubmitter.cpp
         usagestatistic.qrc
     DEFINES
