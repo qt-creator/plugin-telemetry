@@ -61,7 +61,7 @@ QString ModeUsageTimeSource::description() const
 // Keep synced with ModeUsageTimeSource::Mode {
 static const auto &modeMarks()
 {
-    static const QString marks[] = {"welcome", "edit", "design", "debug", "project", "help", "other"};
+    static const QString marks[] = {"welcome", "edit", "design", "debug", "project", "extensionmanager", "help", "other"};
     return marks;
 }
 // }

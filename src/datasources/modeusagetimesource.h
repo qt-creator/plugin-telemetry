@@ -41,7 +41,7 @@ class ModeUsageTimeSource : public QObject, public KUserFeedback::AbstractDataSo
     Q_OBJECT
 
 public: // Types
-    enum Mode {Welcome, Edit, Design, Debug, Projects, Help, Other, ModesCount};
+    enum Mode {Welcome, Edit, Design, Debug, Projects, ExtensionManager, Help, Other, ModesCount};
 
 public:
     ModeUsageTimeSource();
