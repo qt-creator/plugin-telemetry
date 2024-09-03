@@ -124,7 +124,7 @@ ModeUsageTimeSource::Mode ModeUsageTimeSource::currentMode() const
 
 void ModeUsageTimeSource::onCurrentModeIdChanged(const Utils::Id &modeId)
 {
-    auto mode = modeFromString(QString::fromUtf8(modeId.name().toLower().simplified()));
+    auto mode = modeFromString(QString::fromUtf8(modeId.name()).toLower().simplified());
 
     if (m_currentMode == mode) {
         return;
