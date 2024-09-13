@@ -70,6 +70,7 @@ void UsageStatisticSimpleWidget::addPrivacyPolicyLink()
 
     const auto tooltipTemplate = tr("Open %1");
     ui->lblPrivacyPolicy->setToolTip(tooltipTemplate.arg(Constants::PRIVACY_POLICY_URL));
+    ui->lblPrivacyPolicy->setOpenExternalLinks(true);
 }
 
 UsageStatisticSimpleWidget::~UsageStatisticSimpleWidget() = default;
