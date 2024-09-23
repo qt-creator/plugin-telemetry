@@ -26,14 +26,15 @@
 
 #include <memory>
 
-#include "usagestatistic_global.h"
-
 #include <extensionsystem/iplugin.h>
 
-namespace KUserFeedback { class Provider; }
+#include <QObject>
 
-namespace UsageStatistic {
-namespace Internal {
+QT_BEGIN_NAMESPACE
+class QInsightTracker;
+QT_END_NAMESPACE
+
+namespace UsageStatistic::Internal {
 
 class UsageStatisticPage;
 
@@ -47,24 +48,21 @@ public:
     UsageStatisticPlugin();
     ~UsageStatisticPlugin() override;
 
-    bool initialize(const QStringList &arguments, QString *errorString) override;
+    void initialize() override;
     void extensionsInitialized() override;
     bool delayedInitialize() override;
     ShutdownFlag aboutToShutdown() override;
 
-private:
-    void createUsageStatisticPage();
-    void storeSettings();
-    void restoreSettings();
-    void createProvider();
-    void showEncouragementMessage();
-    void showFirstTimeMessage();
-    void submitDataOnFirstStart();
+    void configureInsight();
 
 private:
-    std::shared_ptr<KUserFeedback::Provider> m_provider;
-    std::unique_ptr<UsageStatisticPage> m_usageStatisticPage;
+    void showInfoBar();
+
+    void createProviders();
+
+private:
+    std::unique_ptr<QInsightTracker> m_tracker;
+    std::vector<std::unique_ptr<QObject>> m_providers;
 };
 
-} // namespace Internal
-} // namespace UsageStatistic
+} // namespace UsageStatistic::Internal

@@ -23,254 +23,278 @@
 **
 ****************************************************************************/
 #include "usagestatisticplugin.h"
-#include "usagestatisticconstants.h"
 
-#include <coreplugin/icore.h>
-#include <coreplugin/icontext.h>
-#include <coreplugin/actionmanager/actionmanager.h>
-#include <coreplugin/actionmanager/command.h>
-#include <coreplugin/actionmanager/actioncontainer.h>
-#include <coreplugin/coreconstants.h>
+#include <extensionsystem/pluginmanager.h>
+#include <extensionsystem/pluginspec.h>
+#include <utils/algorithm.h>
+#include <utils/appinfo.h>
+#include <utils/aspects.h>
 #include <utils/infobar.h>
+#include <utils/layoutbuilder.h>
 
-#include <KUserFeedback/Provider>
-#include <KUserFeedback/ApplicationVersionSource>
-#include <KUserFeedback/CompilerInfoSource>
-#include <KUserFeedback/CpuInfoSource>
-#include <KUserFeedback/LocaleInfoSource>
-#include <KUserFeedback/OpenGLInfoSource>
-#include <KUserFeedback/PlatformInfoSource>
-#include <KUserFeedback/QPAInfoSource>
-#include <KUserFeedback/QtVersionSource>
-#include <KUserFeedback/ScreenInfoSource>
-#include <KUserFeedback/StartCountSource>
-#include <KUserFeedback/UsageTimeSource>
-#include <KUserFeedback/StyleInfoSource>
-
-#include "datasources/applicationsource.h"
-#include "datasources/buildcountsource.h"
-#include "datasources/buildsystemsource.h"
-#include "datasources/examplesdatasource.h"
-#include "datasources/kitsource.h"
-#include "datasources/modeusagetimesource.h"
-#include "datasources/qmldesignerusageeventsource.h"
-#include "datasources/qmldesignerusagetimesource.h"
-#include "datasources/qtclicensesource.h"
-#include "datasources/servicesource.h"
-
-#include "services/datasubmitter.h"
-
-#include "ui/usagestatisticpage.h"
-
-#include "common/utils.h"
+#include <coreplugin/dialogs/ioptionspage.h>
+#include <coreplugin/icore.h>
+#include <coreplugin/modemanager.h>
 
 #include <QGuiApplication>
+#include <QInsightConfiguration>
+#include <QInsightTracker>
 #include <QTimer>
 
-namespace UsageStatistic {
-namespace Internal {
+using namespace Core;
+using namespace ExtensionSystem;
+using namespace Utils;
 
-UsageStatisticPlugin::UsageStatisticPlugin() = default;
+Q_LOGGING_CATEGORY(statLog, "qtc.usagestatistic", QtWarningMsg);
+
+const char kSettingsPageId[] = "UsageStatistic.PreferencesPage";
+
+namespace UsageStatistic::Internal {
+
+static UsageStatisticPlugin *m_instance = nullptr;
+
+class ModeChanges : public QObject
+{
+    Q_OBJECT
+public:
+    ModeChanges(QInsightTracker *tracker)
+    {
+        const auto id = [](const Id &modeId) -> QString {
+            return ":MODE:" + QString::fromUtf8(modeId.name());
+        };
+        connect(ModeManager::instance(), &ModeManager::currentModeChanged, this, [=](const Id &modeId) {
+            tracker->transition(id(modeId));
+        });
+        // initialize with current mode
+        tracker->transition(id(ModeManager::currentModeId()));
+    }
+};
+
+class UILanguage : public QObject
+{
+    Q_OBJECT
+public:
+    UILanguage(QInsightTracker *tracker)
+    {
+        tracker->interaction(":CONFIG:UILanguage", ICore::userInterfaceLanguage(), 0);
+        const QStringList languages = QLocale::system().uiLanguages();
+        tracker->interaction(":CONFIG:SystemLanguage",
+                             languages.isEmpty() ? QString("Unknown") : languages.first(),
+                             0);
+    }
+};
+
+class Settings : public AspectContainer
+{
+public:
+    Settings()
+    {
+        setAutoApply(false);
+        setSettingsGroup("UsageStatistic");
+        trackingEnabled.setDefaultValue(false);
+        trackingEnabled.setSettingsKey("TrackingEnabled");
+        trackingEnabled.setLabel(UsageStatisticPlugin::tr("Send pseudonymous usage statistics"),
+                                 BoolAspect::LabelPlacement::AtCheckBox);
+    }
+
+    Utils::BoolAspect trackingEnabled{this};
+};
+
+static Settings &theSettings()
+{
+    static Settings settings;
+    return settings;
+}
+
+class SettingsWidget : public IOptionsPageWidget
+{
+public:
+    SettingsWidget()
+    {
+        Settings &s = theSettings();
+
+        using namespace Layouting;
+        // clang-format off
+        Column {
+            s.trackingEnabled,
+            Group {
+                Column {
+                    Label {
+                        text(UsageStatisticPlugin::tr("%1 collects pseudonymous information about "
+                             "your system and the way you use the application. The data is "
+                             "associated with a pseudonymous user ID generated only for this "
+                             "purpose. The data will be shared with services managed by "
+                             "The Qt Company. It does however not contain individual content "
+                             "created by you, and will be used by The Qt Company strictly for the "
+                             "purposes of improving their products.")
+                                .arg(QGuiApplication::applicationDisplayName())),
+                        wordWrap(true)
+                    },
+                    Label {
+                        text("<a href=\"qthelp://org.qt-project.qtcreator/doc/creator-telemetry.html\">"
+                          + UsageStatisticPlugin::tr("More information") + "</a>"),
+                        openExternalLinks(true)
+                    },
+                    st
+                }
+            }
+        }.attachTo(this);
+        // clang-format on
+
+        setOnApply([] {
+            theSettings().apply();
+            m_instance->configureInsight();
+        });
+        setOnCancel([] { theSettings().cancel(); });
+        setOnFinish([] { theSettings().finish(); });
+    }
+};
+
+class SettingsPage final : public Core::IOptionsPage
+{
+public:
+    SettingsPage()
+    {
+        setId(kSettingsPageId);
+        setCategory("Telemetry");
+        setCategoryIconPath(":/usagestatistic/images/settingscategory_usagestatistic.png");
+        setDisplayName(UsageStatisticPlugin::tr("Usage Statistics"));
+        setDisplayCategory(UsageStatisticPlugin::tr("Telemetry"));
+        setCategoryIconPath(":/autotest/images/settingscategory_autotest.png");
+        setWidgetCreator([] { return new SettingsWidget; });
+    }
+};
+
+static void setupSettingsPage()
+{
+    static SettingsPage settings;
+}
+
+UsageStatisticPlugin::UsageStatisticPlugin()
+{
+    m_instance = this;
+}
 
 UsageStatisticPlugin::~UsageStatisticPlugin() = default;
 
-static bool telemetryLevelNotSet(const KUserFeedback::Provider &provider)
+void UsageStatisticPlugin::initialize()
 {
-    return provider.telemetryMode() == KUserFeedback::Provider::NoTelemetry;
-}
+    setupSettingsPage();
 
-bool UsageStatisticPlugin::initialize(const QStringList &arguments, QString *errorString)
-{
-    Q_UNUSED(arguments)
-    Q_UNUSED(errorString)
-
-    return true;
+    theSettings().readSettings();
 }
 
 void UsageStatisticPlugin::extensionsInitialized()
 {
 }
 
-static void addDefaultDataSources(KUserFeedback::Provider &provider)
-{
-    provider.addDataSource(new KUserFeedback::ApplicationVersionSource);
-    provider.addDataSource(new KUserFeedback::CompilerInfoSource);
-    provider.addDataSource(new KUserFeedback::CpuInfoSource);
-    provider.addDataSource(new KUserFeedback::LocaleInfoSource);
-    provider.addDataSource(new KUserFeedback::OpenGLInfoSource);
-    provider.addDataSource(new KUserFeedback::PlatformInfoSource);
-    provider.addDataSource(new KUserFeedback::QPAInfoSource);
-    provider.addDataSource(new KUserFeedback::QtVersionSource);
-    provider.addDataSource(new KUserFeedback::ScreenInfoSource);
-    provider.addDataSource(new KUserFeedback::StartCountSource);
-    provider.addDataSource(new KUserFeedback::UsageTimeSource);
-    provider.addDataSource(new KUserFeedback::StyleInfoSource);
-}
-
-static void addQtCreatorDataSources(KUserFeedback::Provider &provider)
-{
-    provider.addDataSource(new ApplicationSource);
-    provider.addDataSource(new QtcLicenseSource);
-    provider.addDataSource(new BuildCountSource);
-    provider.addDataSource(new BuildSystemSource);
-    provider.addDataSource(new ModeUsageTimeSource);
-    provider.addDataSource(new ExamplesDataSource);
-    provider.addDataSource(new KitSource);
-    provider.addDataSource(new QmlDesignerUsageTimeSource);
-    provider.addDataSource(new QmlDesignerUsageEventSource(!telemetryLevelNotSet(provider)));
-}
-
-static void addServiceDataSource(const std::shared_ptr<KUserFeedback::Provider> &provider)
-{
-    if (provider) {
-        provider->addDataSource(new ServiceSource(provider));
-    }
-}
-
 bool UsageStatisticPlugin::delayedInitialize()
 {
-    // We should create the provider only after everything else
-    // is initialised (e.g., setting organization name)
-    createProvider();
+    if (theSettings().trackingEnabled.value())
+        configureInsight();
 
-    addDefaultDataSources(*m_provider);
-    addQtCreatorDataSources(*m_provider);
-    addServiceDataSource(m_provider);
-
-    createUsageStatisticPage();
-
-    restoreSettings();
-
-    showFirstTimeMessage();
-    submitDataOnFirstStart();
+    showInfoBar();
 
     return true;
 }
 
 ExtensionSystem::IPlugin::ShutdownFlag UsageStatisticPlugin::aboutToShutdown()
 {
-    if (m_provider)
-        m_provider->submit();
-
-    storeSettings();
+    theSettings().writeSettings();
 
     return SynchronousShutdown;
 }
 
-void UsageStatisticPlugin::createUsageStatisticPage()
+static constexpr int submissionInterval()
 {
-    m_usageStatisticPage = std::make_unique<UsageStatisticPage>(m_provider);
-
-    connect(m_usageStatisticPage->instance(),
-            &SettingsSignals::settingsChanged,
-            this,
-            &UsageStatisticPlugin::storeSettings);
+    using namespace std::literals;
+    return std::chrono::hours(1) / 1s;
 }
 
-void UsageStatisticPlugin::storeSettings()
+
+void UsageStatisticPlugin::configureInsight()
 {
-    if (m_provider) {
-        m_provider->store();
-    }
-}
+    qCDebug(statLog) << "Configuring insight, enabled:" << theSettings().trackingEnabled.value();
+    if (theSettings().trackingEnabled.value()) {
+        if (!m_tracker) {
+            // silence qt.insight.*.info logging category if logging for usagestatistic is not enabled
+            // the issue here is, that qt.insight.*.info is enabled by default and spams terminals
+            static std::optional<QLoggingCategory::CategoryFilter> previousFilter;
+            if (!statLog().isDebugEnabled()) {
+                previousFilter = QLoggingCategory::installFilter([](QLoggingCategory *log) {
+                    if (previousFilter && previousFilter.has_value())
+                        (*previousFilter)(log);
+                    if (QString::fromUtf8(log->categoryName()).startsWith("qt.insight"))
+                        log->setEnabled(QtInfoMsg, false);
+                });
+            }
 
-void UsageStatisticPlugin::restoreSettings()
-{
-    if (m_provider) {
-        m_provider->load();
-    }
-}
+            qCDebug(statLog) << "Creating tracker";
+            m_tracker.reset(new QInsightTracker);
+            QInsightConfiguration *config = m_tracker->configuration();
+            config->setEvents({}); // the default is a big list including key events....
+            config->setStoragePath(ICore::cacheResourcePath("insight").path());
+            qCDebug(statLog) << "Cache path:" << config->storagePath();
+            // TODO provide a button for removing the cache?
+            // TODO config->setStorageSize(???); // unlimited by default
+            config->setSyncInterval(submissionInterval());
+            config->setBatchSize(100);
+            config->setDeviceModel(QString("%1 (%2)").arg(QSysInfo::productType(),
+                                                          QSysInfo::currentCpuArchitecture()));
+            config->setDeviceVariant(QSysInfo::productVersion());
+            config->setDeviceScreenType("NON_TOUCH");
+            config->setPlatform("app"); // see "Snowplow Tracker Protocol"
+            config->setAppBuild(appInfo().displayVersion);
+            config->setServer(QTC_INSIGHT_URL);
+            config->setToken(QTC_INSIGHT_TOKEN);
+            m_tracker->setEnabled(true);
+            createProviders();
+            m_tracker->startNewSession();
 
-static constexpr int encouragementTimeSec() { return 1800; }
-static constexpr int encouragementIntervalDays() { return 1; }
-static constexpr int submissionIntervalDays()
-{
-    return 1;
-}
-
-void UsageStatisticPlugin::createProvider()
-{
-    Q_ASSERT(!m_provider);
-    m_provider = std::make_shared<KUserFeedback::Provider>();
-
-    m_provider->setFeedbackServer(QString::fromUtf8(Utils::serverUrl()));
-    m_provider->setDataSubmitter(new DataSubmitter);
-
-    m_provider->setApplicationUsageTimeUntilEncouragement(encouragementTimeSec());
-    m_provider->setEncouragementDelay(encouragementTimeSec());
-    m_provider->setEncouragementInterval(encouragementIntervalDays());
-
-    m_provider->setSubmissionInterval(submissionIntervalDays());
-}
-
-static bool runFirstTime(const KUserFeedback::Provider &provider)
-{
-    static const auto startCountSourceId = QStringLiteral("startCount");
-    if (auto startCountSource = provider.dataSource(startCountSourceId)) {
-        auto data = startCountSource->data().toMap();
-
-        static const auto startCountKey = QStringLiteral("value");
-        const auto startCountIt = data.find(startCountKey);
-        if (startCountIt != data.end()) {
-            return startCountIt->toInt() == 1;
+            // reinstall previous logging filter if required
+            if (previousFilter)
+                QLoggingCategory::installFilter(*previousFilter);
         }
-    }
-
-    return false;
-}
-
-void UsageStatisticPlugin::showFirstTimeMessage()
-{
-    if (m_provider && runFirstTime(*m_provider) && telemetryLevelNotSet(*m_provider)) {
-        showEncouragementMessage();
+    } else {
+        if (m_tracker)
+            m_tracker->setEnabled(false);
     }
 }
 
-void UsageStatisticPlugin::submitDataOnFirstStart()
+void UsageStatisticPlugin::showInfoBar()
 {
-    /*
-     * On first start submit data after 10 minutes.
-     */
-
-    if (m_provider && runFirstTime(*m_provider) && !telemetryLevelNotSet(*m_provider))
-        QTimer::singleShot(1000 * 60 * 10, this, [this]() { m_provider->submit(); });
-}
-
-static ::Utils::InfoBarEntry makeInfoBarEntry()
-{
+    static const char kInfoBarId[] = "UsageStatistic.AskAboutCollectingDataInfoBar";
+    if (!ICore::infoBar()->canInfoBeAdded(kInfoBarId) || theSettings().trackingEnabled.value())
+        return;
     static auto infoText = UsageStatisticPlugin::tr(
                                "We make %1 for you. Would you like to help us make it even better?")
                                .arg(QGuiApplication::applicationDisplayName());
-    static auto customButtonInfoText = UsageStatisticPlugin::tr("Adjust usage statistics settings");
+    static auto configureButtonInfoText = UsageStatisticPlugin::tr("Configure usage statistics...");
     static auto cancelButtonInfoText = UsageStatisticPlugin::tr("Decide later");
 
-    static auto hideEncouragementMessageCallback = []() {
-        if (auto infoBar = Core::ICore::infoBar()) {
-            infoBar->removeInfo(Constants::ENC_MSG_INFOBAR_ENTRY_ID);
-        }
-    };
-
-    static auto showUsageStatisticsSettingsCallback = []() {
-        hideEncouragementMessageCallback();
-        Core::ICore::showOptionsDialog(Constants::USAGE_STATISTIC_PAGE_ID);
-    };
-
-    ::Utils::InfoBarEntry entry(Constants::ENC_MSG_INFOBAR_ENTRY_ID, infoText);
-    entry.addCustomButton(customButtonInfoText, showUsageStatisticsSettingsCallback);
-    entry.setCancelButtonInfo(cancelButtonInfoText, hideEncouragementMessageCallback);
-
-    return entry;
+    ::Utils::InfoBarEntry entry(kInfoBarId, infoText, InfoBarEntry::GlobalSuppression::Enabled);
+    entry.addCustomButton(configureButtonInfoText, [] {
+        ICore::infoBar()->removeInfo(kInfoBarId);
+        ICore::showOptionsDialog(kSettingsPageId);
+    });
+    entry.setCancelButtonInfo(cancelButtonInfoText, {});
+    ICore::infoBar()->addInfo(entry);
 }
 
-void UsageStatisticPlugin::showEncouragementMessage()
+void UsageStatisticPlugin::createProviders()
 {
-    if (auto infoBar = Core::ICore::infoBar()) {
-        if (!infoBar->containsInfo(Constants::ENC_MSG_INFOBAR_ENTRY_ID)) {
-            static auto infoBarEntry = makeInfoBarEntry();
-            infoBar->addInfo(infoBarEntry);
-        }
+    // startup configs first, otherwise they will be attributed to the UI state
+    m_providers.push_back(std::make_unique<UILanguage>(m_tracker.get()));
+
+    // UI state last
+    m_providers.push_back(std::make_unique<ModeChanges>(m_tracker.get()));
+
+    for (const auto &provider : m_providers) {
+        qCDebug(statLog) << "Created usage statistics provider"
+                         << provider.get()->metaObject()->className();
     }
 }
 
-} // namespace Internal
-} // namespace UsageStatistic
+} // namespace UsageStatistic::Internal
+
+#include "usagestatisticplugin.moc"

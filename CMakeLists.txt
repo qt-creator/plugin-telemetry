@@ -1,79 +1,10 @@
 cmake_minimum_required(VERSION 3.10)
 
-project(plugin-telemetry)
+project(UsageStatistic)
 
-include(ExternalProject)
+set(CMAKE_AUTOMOC ON)
+set(CMAKE_AUTORCC ON)
+set(CMAKE_AUTOUIC ON)
+set(CMAKE_CXX_STANDARD 20)
 
-list(APPEND CMAKE_PREFIX_PATH
-    ${CMAKE_CURRENT_BINARY_DIR}/extra-cmake-modules
-    ${CMAKE_CURRENT_BINARY_DIR}/kuserfeedback)
-string(REPLACE ";" "$<SEMICOLON>" CMAKE_PREFIX_PATH_MASKED_SEMICOLON "${CMAKE_PREFIX_PATH}")
-if(CMAKE_OSX_ARCHITECTURES)
-    string(REPLACE ";" "$<SEMICOLON>" CMAKE_OSX_ARCHITECTURES_MASKED_SEMICOLON "-DCMAKE_OSX_ARCHITECTURES=${CMAKE_OSX_ARCHITECTURES}")
-endif()
-
-ExternalProject_Add(extra-cmake-modules
-    PREFIX extra-cmake-modules
-    SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/extra-cmake-modules"
-    CMAKE_ARGS
-        -DBUILD_HTML_DOCS=OFF
-        -DBUILD_MAN_DOCS=OFF
-        -DBUILD_QTHELP_DOCS=OFF
-        -DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/extra-cmake-modules
-        "${CMAKE_OSX_ARCHITECTURES_MASKED_SEMICOLON}"
-)
-
-set(KUSERFEEDBACK_COMPONENTS
-    -DBUILD_SHARED_LIBS=OFF
-    -DBUILD_TESTING=OFF
-    -DENABLE_SURVEY_TARGET_EXPRESSIONS=OFF
-    -DENABLE_PHP=OFF
-    -DENABLE_PHP_UNIT=OFF
-    -DENABLE_DOCS=OFF
-    -DENABLE_CONSOLE=OFF
-    -DENABLE_CLI=OFF
-    -DBUILD_SHARED_LIBS=OFF
-)
-
-ExternalProject_Add(kuserfeedback
-    PREFIX kuserfeedback
-    SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/kuserfeedback"
-    LIST_SEPARATOR |
-    CMAKE_ARGS
-        ${KUSERFEEDBACK_DEFINES}
-        ${KUSERFEEDBACK_COMPONENTS}
-        -DKDE_INSTALL_LIBDIR=lib
-        -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
-        -DCMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH_MASKED_SEMICOLON}
-        -DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/kuserfeedback
-        "${CMAKE_OSX_ARCHITECTURES_MASKED_SEMICOLON}"
-    DEPENDS extra-cmake-modules
-)
-
-if(NOT DEFINED USP_SERVER_URL OR NOT DEFINED USP_AUTH_KEY)
-    message(WARNING "Collected data won't be sent
-Define both USP_SERVER_URL and USP_AUTH_KEY to enable data submission")
-endif()
-
-find_package(QtCreator COMPONENTS Core Debugger ProjectExplorer QtSupport QUIET)
-
-if(BUILD_DESIGNSTUDIO)
-    set(CMAKE_INSTALL_PREFIX ${QtCreator_BINARY_DIR})
-endif()
-
-ExternalProject_Add(plugin
-    PREFIX plugin
-    SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src"
-    LIST_SEPARATOR |
-    CMAKE_ARGS
-        -DUSP_AUTH_KEY=${USP_AUTH_KEY}
-        -DUSP_SERVER_URL=${USP_SERVER_URL}
-        -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
-        -DCMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH_MASKED_SEMICOLON}
-        -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}
-        -DQtCreator_BINARY_DIR:PATH=${QtCreator_BINARY_DIR}
-        -DQTC_MERGE_BINARY_DIR:BOOL=${QTC_MERGE_BINARY_DIR}
-        "${CMAKE_OSX_ARCHITECTURES_MASKED_SEMICOLON}"
-    DEPENDS kuserfeedback QtCreator::Core QtCreator::Debugger QtCreator::ProjectExplorer QtCreator::QtSupport
-    BUILD_ALWAYS ON
-)
+add_subdirectory(src)
