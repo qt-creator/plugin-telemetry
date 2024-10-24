@@ -6,7 +6,7 @@ find_package(Qt6 COMPONENTS Core Widgets QuickWidgets REQUIRED)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 
 # pre-configure and install extra-cmake-modules (ECM) to ensure module availability for
 # kuserfeedback configuration
