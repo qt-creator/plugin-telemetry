@@ -31,6 +31,7 @@
 #include <utils/aspects.h>
 #include <utils/infobar.h>
 #include <utils/layoutbuilder.h>
+#include <utils/theme/theme.h>
 
 #include <coreplugin/dialogs/ioptionspage.h>
 #include <coreplugin/icore.h>
@@ -80,6 +81,22 @@ public:
         const QStringList languages = QLocale::system().uiLanguages();
         tracker->interaction(":CONFIG:SystemLanguage",
                              languages.isEmpty() ? QString("Unknown") : languages.first(),
+                             0);
+    }
+};
+
+class Theme : public QObject
+{
+    Q_OBJECT
+public:
+    Theme(QInsightTracker *tracker)
+    {
+        tracker->interaction(":CONFIG:Theme",
+                             creatorTheme() ? creatorTheme()->id() : QString("Unknown"),
+                             0);
+        const bool isDarkSystem = Utils::Theme::systemUsesDarkMode();
+        tracker->interaction(":CONFIG:SystemTheme",
+                             isDarkSystem ? QString("dark") : QString("light"),
                              0);
     }
 };
@@ -285,6 +302,7 @@ void UsageStatisticPlugin::createProviders()
 {
     // startup configs first, otherwise they will be attributed to the UI state
     m_providers.push_back(std::make_unique<UILanguage>(m_tracker.get()));
+    m_providers.push_back(std::make_unique<Theme>(m_tracker.get()));
 
     // UI state last
     m_providers.push_back(std::make_unique<ModeChanges>(m_tracker.get()));
