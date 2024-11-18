@@ -174,10 +174,7 @@ public:
     {
         setId(kSettingsPageId);
         setCategory("Telemetry");
-        setCategoryIconPath(":/usagestatistic/images/settingscategory_usagestatistic.png");
         setDisplayName(UsageStatisticPlugin::tr("Usage Statistics"));
-        setDisplayCategory(UsageStatisticPlugin::tr("Telemetry"));
-        setCategoryIconPath(":/autotest/images/settingscategory_autotest.png");
         setWidgetCreator([] { return new SettingsWidget; });
     }
 };
@@ -190,6 +187,10 @@ static void setupSettingsPage()
 UsageStatisticPlugin::UsageStatisticPlugin()
 {
     m_instance = this;
+    Core::IOptionsPage::registerCategory(
+        "Telemetry",
+        UsageStatisticPlugin::tr("Telemetry"),
+        ":/usagestatistic/images/settingscategory_usagestatistic.png");
 }
 
 UsageStatisticPlugin::~UsageStatisticPlugin() = default;
