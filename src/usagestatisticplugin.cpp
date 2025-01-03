@@ -40,6 +40,7 @@
 #include <QGuiApplication>
 #include <QInsightConfiguration>
 #include <QInsightTracker>
+#include <QMetaEnum>
 #include <QTimer>
 
 using namespace Core;
@@ -94,10 +95,10 @@ public:
         tracker->interaction(":CONFIG:Theme",
                              creatorTheme() ? creatorTheme()->id() : QString("Unknown"),
                              0);
-        const bool isDarkSystem = Utils::Theme::systemUsesDarkMode();
-        tracker->interaction(":CONFIG:SystemTheme",
-                             isDarkSystem ? QString("dark") : QString("light"),
-                             0);
+        const QString systemTheme = QString::fromUtf8(QMetaEnum::fromType<Qt::ColorScheme>().valueToKey(
+                                                          int(Utils::Theme::systemColorScheme())))
+                                        .toLower();
+        tracker->interaction(":CONFIG:SystemTheme", systemTheme, 0);
     }
 };
 
