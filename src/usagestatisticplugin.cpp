@@ -132,9 +132,11 @@ public:
         Settings &s = theSettings();
 
         using namespace Layouting;
-        auto moreInformationLabel = new QLabel(
-            "<a href=\"qthelp://org.qt-project.qtcreator/doc/creator-telemetry.html\">"
-            + UsageStatisticPlugin::tr("More information") + "</a>");
+        auto moreInformationLabel = new QLabel("<a "
+                                               "href=\"qthelp://org.qt-project.qtcreator/doc/"
+                                               "creator-how-to-collect-usage-statistics.html\">"
+                                               + UsageStatisticPlugin::tr("More information")
+                                               + "</a>");
         connect(moreInformationLabel, &QLabel::linkActivated, [this](const QString &link) {
             HelpManager::showHelpUrl(link, HelpManager::ExternalHelpAlways);
         });
