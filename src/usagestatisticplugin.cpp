@@ -31,6 +31,7 @@
 #include <utils/aspects.h>
 #include <utils/infobar.h>
 #include <utils/layoutbuilder.h>
+#include <utils/link.h>
 #include <utils/theme/theme.h>
 
 #include <coreplugin/dialogs/ioptionspage.h>
@@ -38,6 +39,14 @@
 #include <coreplugin/icore.h>
 #include <coreplugin/modemanager.h>
 
+#include <projectexplorer/project.h>
+#include <projectexplorer/projectmanager.h>
+#include <projectexplorer/target.h>
+
+#include <qtsupport/baseqtversion.h>
+#include <qtsupport/qtkitaspect.h>
+
+#include <QCryptographicHash>
 #include <QGuiApplication>
 #include <QInsightConfiguration>
 #include <QInsightTracker>
@@ -46,6 +55,8 @@
 
 using namespace Core;
 using namespace ExtensionSystem;
+using namespace ProjectExplorer;
+using namespace QtSupport;
 using namespace Utils;
 
 Q_LOGGING_CATEGORY(statLog, "qtc.usagestatistic", QtWarningMsg);
@@ -100,6 +111,52 @@ public:
                                                           int(Utils::Theme::systemColorScheme())))
                                         .toLower();
         tracker->interaction(":CONFIG:SystemTheme", systemTheme, 0);
+    }
+};
+
+class QtModules : public QObject
+{
+    Q_OBJECT
+public:
+    QtModules(QInsightTracker *tracker)
+    {
+        connect(ProjectManager::instance(),
+                &ProjectManager::projectAdded,
+                this,
+                [this, tracker](Project *project) {
+                    connect(project, &Project::anyParsingFinished, this, [project, tracker] {
+                        if (!project->activeTarget())
+                            return;
+                        if (!project->activeTarget()->kit())
+                            return;
+                        QtVersion *qtVersion = QtKitAspect::qtVersion(project->activeTarget()->kit());
+                        if (!qtVersion)
+                            return;
+                        const FilePath qtLibPath = qtVersion->libraryPath();
+                        using ModuleHash = QHash<QString, Utils::Link>;
+                        const ModuleHash all = project->activeTarget()
+                                                   ->additionalData("FoundPackages")
+                                                   .value<ModuleHash>();
+                        QStringList qtPackages;
+                        for (auto it = all.begin(); it != all.end(); ++it) {
+                            const QString name = it.key();
+                            const FilePath cmakePath = it.value().targetFilePath;
+                            if (name.size() > 4 && name.startsWith("Qt") && name[2].isDigit()
+                                && name[3].isUpper() && !name.endsWith("plugin", Qt::CaseInsensitive)
+                                && cmakePath.isChildOf(qtLibPath))
+                                qtPackages.append(name);
+                        }
+                        if (qtPackages.isEmpty())
+                            return;
+                        const QString projectID = QString::fromLatin1(
+                            QCryptographicHash::hash(project->projectFilePath().toFSPathString().toUtf8(),
+                                                     QCryptographicHash::Sha1)
+                                .toHex());
+                        const QString json = "{\"projectid\":\"" + projectID + "\",\"qtmodules\":[\""
+                                             + qtPackages.join("\",\"") + "\"]}";
+                        tracker->interaction("QtModules", json, 0);
+                    });
+                });
     }
 };
 
@@ -310,6 +367,7 @@ void UsageStatisticPlugin::createProviders()
     // startup configs first, otherwise they will be attributed to the UI state
     m_providers.push_back(std::make_unique<UILanguage>(m_tracker.get()));
     m_providers.push_back(std::make_unique<Theme>(m_tracker.get()));
+    m_providers.push_back(std::make_unique<QtModules>(m_tracker.get()));
 
     // UI state last
     m_providers.push_back(std::make_unique<ModeChanges>(m_tracker.get()));
