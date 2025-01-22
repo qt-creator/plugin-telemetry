@@ -24,6 +24,10 @@
 ****************************************************************************/
 #include "usagestatisticplugin.h"
 
+#ifdef BUILD_DESIGNSTUDIO
+#include "qdseventshandler.h"
+#endif
+
 #include <extensionsystem/pluginmanager.h>
 #include <extensionsystem/pluginspec.h>
 #include <utils/algorithm.h>
@@ -233,7 +237,6 @@ static constexpr int submissionInterval()
     return std::chrono::hours(1) / 1s;
 }
 
-
 void UsageStatisticPlugin::configureInsight()
 {
     qCDebug(statLog) << "Configuring insight, enabled:" << theSettings().trackingEnabled.value();
@@ -306,11 +309,20 @@ void UsageStatisticPlugin::showInfoBar()
 void UsageStatisticPlugin::createProviders()
 {
     // startup configs first, otherwise they will be attributed to the UI state
-    m_providers.push_back(std::make_unique<UILanguage>(m_tracker.get()));
     m_providers.push_back(std::make_unique<Theme>(m_tracker.get()));
 
-    // UI state last
-    m_providers.push_back(std::make_unique<ModeChanges>(m_tracker.get()));
+    // not needed for QDS
+    if (!ICore::isQtDesignStudio()) {
+        m_providers.push_back(std::make_unique<UILanguage>(m_tracker.get()));
+
+        // UI state last
+        m_providers.push_back(std::make_unique<ModeChanges>(m_tracker.get()));
+    }
+
+#ifdef BUILD_DESIGNSTUDIO
+    // handle events emitted from QDS
+    m_providers.push_back(std::make_unique<QDSEventsHandler>(m_tracker.get()));
+#endif
 
     for (const auto &provider : m_providers) {
         qCDebug(statLog) << "Created usage statistics provider"
