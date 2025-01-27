@@ -44,6 +44,20 @@ QDSEventsHandler::QDSEventsHandler(QInsightTracker* tracker)
             [&](QString identifier){
                 tracker->interaction(identifier);
     });
+
+    connect(qmlDesignerPlugin,
+            &QmlDesignerPlugin::usageStatisticsInsertFeedback,
+            this,
+            [&](QString identifier, QString feedback, int rating){
+                QString textFeedback = "Feedback: ";
+
+                if (feedback.isEmpty())
+                    textFeedback += "empty";
+                else
+                    textFeedback += feedback;
+
+                tracker->interaction(identifier, textFeedback, rating);
+    });
 }
 
 } // namespace UsageStatistic::Internal
