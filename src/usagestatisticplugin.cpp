@@ -241,7 +241,7 @@ void UsageStatisticPlugin::configureInsight()
 {
     qCDebug(statLog) << "Configuring insight, enabled:" << theSettings().trackingEnabled.value();
     if (theSettings().trackingEnabled.value()) {
-        if (!m_tracker) {
+        if (!m_tracker || !m_tracker->isEnabled()) {
             // silence qt.insight.*.info logging category if logging for usagestatistic is not enabled
             // the issue here is, that qt.insight.*.info is enabled by default and spams terminals
             static std::optional<QLoggingCategory::CategoryFilter> previousFilter;
