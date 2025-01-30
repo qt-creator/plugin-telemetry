@@ -23,6 +23,7 @@
 **
 ****************************************************************************/
 #include "usagestatisticplugin.h"
+#include "coreplugin/actionmanager/actionmanager.h"
 
 #ifdef BUILD_DESIGNSTUDIO
 #include "qdseventshandler.h"
@@ -169,6 +170,7 @@ public:
 
         setOnApply([] {
             theSettings().apply();
+            theSettings().writeToSettingsImmediatly(); // write the updated "TrackingEnabled" value to the .ini
             m_instance->configureInsight();
         });
         setOnCancel([] { theSettings().cancel(); });
@@ -207,6 +209,11 @@ void UsageStatisticPlugin::initialize()
 {
     setupSettingsPage();
 
+    if (Core::ICore::isQtDesignStudio()) {
+        Utils::QtcSettings *settings = Core::ICore::settings();
+        settings->setValue("lastSessionCrashed", true); // value will persist unless cleared in aboutToShutdown()
+    }
+
     theSettings().readSettings();
 }
 
@@ -227,6 +234,9 @@ bool UsageStatisticPlugin::delayedInitialize()
 ExtensionSystem::IPlugin::ShutdownFlag UsageStatisticPlugin::aboutToShutdown()
 {
     theSettings().writeSettings();
+
+    Utils::QtcSettings *settings = Core::ICore::settings();
+    settings->remove("lastSessionCrashed");
 
     return SynchronousShutdown;
 }
@@ -283,6 +293,13 @@ void UsageStatisticPlugin::configureInsight()
     } else {
         if (m_tracker)
             m_tracker->setEnabled(false);
+    }
+
+    Core::Command *cmd = Core::ActionManager::command("Help.GiveFeedback");
+
+    if (cmd) {
+        cmd->action()->setEnabled(m_tracker->isEnabled());
+        cmd->action()->setVisible(m_tracker->isEnabled());
     }
 }
 
