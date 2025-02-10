@@ -17,7 +17,7 @@ if (BUILD_DESIGNSTUDIO)
   set(ADDITIONAL_PLUGIN_DEPENDENCIES "QtCreator::QmlDesigner")
 endif()
 
-add_qtc_plugin(
+add_qtc_plugin(UsageStatistic
     PLUGIN_DEPENDS
         QtCreator::Core
         QtCreator::Debugger
