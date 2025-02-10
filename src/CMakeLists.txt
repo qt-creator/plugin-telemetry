@@ -14,10 +14,10 @@ if(NOT QTC_INSIGHT_TOKEN)
 endif()
 
 if (BUILD_DESIGNSTUDIO)
-  set(ADDITIONAL_PLUGIN_DEPENDENCIES "QmlDesigner")
+  set(ADDITIONAL_PLUGIN_DEPENDENCIES "QtCreator::QmlDesigner")
 endif()
 
-add_qtc_plugin(UsageStatistic
+add_qtc_plugin(
     PLUGIN_DEPENDS
         QtCreator::Core
         QtCreator::Debugger
