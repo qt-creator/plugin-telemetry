@@ -188,7 +188,6 @@ public:
         setCategoryIconPath(":/usagestatistic/images/settingscategory_usagestatistic.png");
         setDisplayName(UsageStatisticPlugin::tr("Usage Statistics"));
         setDisplayCategory(UsageStatisticPlugin::tr("Telemetry"));
-        setCategoryIconPath(":/autotest/images/settingscategory_autotest.png");
         setWidgetCreator([] { return new SettingsWidget; });
     }
 };
