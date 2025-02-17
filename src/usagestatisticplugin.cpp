@@ -1,27 +1,6 @@
-/****************************************************************************
-**
-** Copyright (C) 2019 The Qt Company
-** Contact: https://www.qt.io/licensing/
-**
-** This file is part of UsageStatistic plugin for Qt Creator.
-**
-** Commercial License Usage
-** Licensees holding valid commercial Qt licenses may use this file in
-** accordance with the commercial license agreement provided with the
-** Software or, alternatively, in accordance with the terms contained in
-** a written agreement between you and The Qt Company. For licensing terms
-** and conditions see https://www.qt.io/terms-conditions. For further
-** information use the contact form at https://www.qt.io/contact-us.
-**
-** GNU General Public License Usage
-** Alternatively, this file may be used under the terms of the GNU
-** General Public License version 3 as published by the Free Software
-** Foundation with exceptions as appearing in the file LICENSE.GPL3-EXCEPT
-** included in the packaging of this file. Please review the following
-** information to ensure the GNU General Public License requirements will
-** be met: https://www.gnu.org/licenses/gpl-3.0.html.
-**
-****************************************************************************/
+// Copyright (C) 2025 The Qt Company Ltd.
+// SPDX-License-Identifier: LicenseRef-Qt-Commercial OR GPL-3.0-only WITH Qt-GPL-exception-1.0
+
 #include "usagestatisticplugin.h"
 #include "coreplugin/actionmanager/actionmanager.h"
 
@@ -36,6 +15,7 @@
 #include <utils/aspects.h>
 #include <utils/infobar.h>
 #include <utils/layoutbuilder.h>
+#include <utils/link.h>
 #include <utils/theme/theme.h>
 
 #include <coreplugin/dialogs/ioptionspage.h>
@@ -43,13 +23,24 @@
 #include <coreplugin/icore.h>
 #include <coreplugin/modemanager.h>
 
+#include <projectexplorer/project.h>
+#include <projectexplorer/projectmanager.h>
+#include <projectexplorer/target.h>
+
+#include <qtsupport/baseqtversion.h>
+#include <qtsupport/qtkitaspect.h>
+
+#include <QCryptographicHash>
 #include <QGuiApplication>
 #include <QInsightConfiguration>
 #include <QInsightTracker>
+#include <QMetaEnum>
 #include <QTimer>
 
 using namespace Core;
 using namespace ExtensionSystem;
+using namespace ProjectExplorer;
+using namespace QtSupport;
 using namespace Utils;
 
 Q_LOGGING_CATEGORY(statLog, "qtc.usagestatistic", QtWarningMsg);
@@ -100,10 +91,56 @@ public:
         tracker->interaction(":CONFIG:Theme",
                              creatorTheme() ? creatorTheme()->id() : QString("Unknown"),
                              0);
-        const bool isDarkSystem = Utils::Theme::systemUsesDarkMode();
-        tracker->interaction(":CONFIG:SystemTheme",
-                             isDarkSystem ? QString("dark") : QString("light"),
-                             0);
+        const QString systemTheme = QString::fromUtf8(QMetaEnum::fromType<Qt::ColorScheme>().valueToKey(
+                                                          int(Utils::Theme::systemColorScheme())))
+                                        .toLower();
+        tracker->interaction(":CONFIG:SystemTheme", systemTheme, 0);
+    }
+};
+
+class QtModules : public QObject
+{
+    Q_OBJECT
+public:
+    QtModules(QInsightTracker *tracker)
+    {
+        connect(ProjectManager::instance(),
+                &ProjectManager::projectAdded,
+                this,
+                [this, tracker](Project *project) {
+                    connect(project, &Project::anyParsingFinished, this, [project, tracker] {
+                        if (!project->activeTarget())
+                            return;
+                        if (!project->activeTarget()->kit())
+                            return;
+                        QtVersion *qtVersion = QtKitAspect::qtVersion(project->activeTarget()->kit());
+                        if (!qtVersion)
+                            return;
+                        const FilePath qtLibPath = qtVersion->libraryPath();
+                        using ModuleHash = QHash<QString, Utils::Link>;
+                        const ModuleHash all = project->activeTarget()
+                                                   ->additionalData("FoundPackages")
+                                                   .value<ModuleHash>();
+                        QStringList qtPackages;
+                        for (auto it = all.begin(); it != all.end(); ++it) {
+                            const QString name = it.key();
+                            const FilePath cmakePath = it.value().targetFilePath;
+                            if (name.size() > 4 && name.startsWith("Qt") && name[2].isDigit()
+                                && name[3].isUpper() && !name.endsWith("plugin", Qt::CaseInsensitive)
+                                && cmakePath.isChildOf(qtLibPath))
+                                qtPackages.append(name);
+                        }
+                        if (qtPackages.isEmpty())
+                            return;
+                        const QString projectID = QString::fromLatin1(
+                            QCryptographicHash::hash(project->projectFilePath().toFSPathString().toUtf8(),
+                                                     QCryptographicHash::Sha1)
+                                .toHex());
+                        const QString json = "{\"projectid\":\"" + projectID + "\",\"qtmodules\":[\""
+                                             + qtPackages.join("\",\"") + "\"]}";
+                        tracker->interaction("QtModules", json, 0);
+                    });
+                });
     }
 };
 
@@ -185,9 +222,7 @@ public:
     {
         setId(kSettingsPageId);
         setCategory("Telemetry");
-        setCategoryIconPath(":/usagestatistic/images/settingscategory_usagestatistic.png");
         setDisplayName(UsageStatisticPlugin::tr("Usage Statistics"));
-        setDisplayCategory(UsageStatisticPlugin::tr("Telemetry"));
         setWidgetCreator([] { return new SettingsWidget; });
     }
 };
@@ -200,6 +235,10 @@ static void setupSettingsPage()
 UsageStatisticPlugin::UsageStatisticPlugin()
 {
     m_instance = this;
+    Core::IOptionsPage::registerCategory(
+        "Telemetry",
+        UsageStatisticPlugin::tr("Telemetry"),
+        ":/usagestatistic/images/settingscategory_usagestatistic.png");
 }
 
 UsageStatisticPlugin::~UsageStatisticPlugin() = default;
@@ -326,6 +365,7 @@ void UsageStatisticPlugin::createProviders()
 {
     // startup configs first, otherwise they will be attributed to the UI state
     m_providers.push_back(std::make_unique<Theme>(m_tracker.get()));
+    m_providers.push_back(std::make_unique<QtModules>(m_tracker.get()));
 
     // not needed for QDS
     if (!ICore::isQtDesignStudio()) {
