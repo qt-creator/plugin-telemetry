@@ -13,12 +13,17 @@ if(NOT QTC_INSIGHT_TOKEN)
   message(WARNING "No QTC_INSIGHT_TOKEN set, UsageStatistic plugin will not send any data")
 endif()
 
+if (BUILD_DESIGNSTUDIO)
+  set(ADDITIONAL_PLUGIN_DEPENDENCIES "QtCreator::QmlDesigner")
+endif()
+
 add_qtc_plugin(UsageStatistic
     PLUGIN_DEPENDS
         QtCreator::Core
         QtCreator::Debugger
         QtCreator::ProjectExplorer
         QtCreator::QtSupport
+        ${ADDITIONAL_PLUGIN_DEPENDENCIES}
     DEPENDS
         Qt::Widgets
         Qt::InsightTracker
@@ -31,6 +36,14 @@ add_qtc_plugin(UsageStatistic
     DEFINES
         QTC_INSIGHT_TOKEN="${QTC_INSIGHT_TOKEN}"
         QTC_INSIGHT_URL="${QTC_INSIGHT_URL}"
+)
+
+extend_qtc_plugin(UsageStatistic
+    DEFINES BUILD_DESIGNSTUDIO
+    CONDITION BUILD_DESIGNSTUDIO
+    SOURCES
+        qdseventshandler.cpp
+        qdseventshandler.h
 )
 
 if(TARGET UsageStatistic)

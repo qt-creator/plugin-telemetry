@@ -2,6 +2,11 @@
 // SPDX-License-Identifier: LicenseRef-Qt-Commercial OR GPL-3.0-only WITH Qt-GPL-exception-1.0
 
 #include "usagestatisticplugin.h"
+#include "coreplugin/actionmanager/actionmanager.h"
+
+#ifdef BUILD_DESIGNSTUDIO
+#include "qdseventshandler.h"
+#endif
 
 #include <extensionsystem/pluginmanager.h>
 #include <extensionsystem/pluginspec.h>
@@ -202,6 +207,7 @@ public:
 
         setOnApply([] {
             theSettings().apply();
+            theSettings().writeToSettingsImmediatly(); // write the updated "TrackingEnabled" value to the .ini
             m_instance->configureInsight();
         });
         setOnCancel([] { theSettings().cancel(); });
@@ -241,6 +247,11 @@ void UsageStatisticPlugin::initialize()
 {
     setupSettingsPage();
 
+    if (Core::ICore::isQtDesignStudio()) {
+        Utils::QtcSettings *settings = Core::ICore::settings();
+        settings->setValue("lastSessionCrashed", true); // value will persist unless cleared in aboutToShutdown()
+    }
+
     theSettings().readSettings();
 }
 
@@ -262,6 +273,9 @@ ExtensionSystem::IPlugin::ShutdownFlag UsageStatisticPlugin::aboutToShutdown()
 {
     theSettings().writeSettings();
 
+    Utils::QtcSettings *settings = Core::ICore::settings();
+    settings->remove("lastSessionCrashed");
+
     return SynchronousShutdown;
 }
 
@@ -271,12 +285,11 @@ static constexpr int submissionInterval()
     return std::chrono::hours(1) / 1s;
 }
 
-
 void UsageStatisticPlugin::configureInsight()
 {
     qCDebug(statLog) << "Configuring insight, enabled:" << theSettings().trackingEnabled.value();
     if (theSettings().trackingEnabled.value()) {
-        if (!m_tracker) {
+        if (!m_tracker || !m_tracker->isEnabled()) {
             // silence qt.insight.*.info logging category if logging for usagestatistic is not enabled
             // the issue here is, that qt.insight.*.info is enabled by default and spams terminals
             static std::optional<QLoggingCategory::CategoryFilter> previousFilter;
@@ -319,6 +332,13 @@ void UsageStatisticPlugin::configureInsight()
         if (m_tracker)
             m_tracker->setEnabled(false);
     }
+
+    Core::Command *cmd = Core::ActionManager::command("Help.GiveFeedback");
+
+    if (cmd) {
+        cmd->action()->setEnabled(m_tracker->isEnabled());
+        cmd->action()->setVisible(m_tracker->isEnabled());
+    }
 }
 
 void UsageStatisticPlugin::showInfoBar()
@@ -344,12 +364,21 @@ void UsageStatisticPlugin::showInfoBar()
 void UsageStatisticPlugin::createProviders()
 {
     // startup configs first, otherwise they will be attributed to the UI state
-    m_providers.push_back(std::make_unique<UILanguage>(m_tracker.get()));
     m_providers.push_back(std::make_unique<Theme>(m_tracker.get()));
     m_providers.push_back(std::make_unique<QtModules>(m_tracker.get()));
 
-    // UI state last
-    m_providers.push_back(std::make_unique<ModeChanges>(m_tracker.get()));
+    // not needed for QDS
+    if (!ICore::isQtDesignStudio()) {
+        m_providers.push_back(std::make_unique<UILanguage>(m_tracker.get()));
+
+        // UI state last
+        m_providers.push_back(std::make_unique<ModeChanges>(m_tracker.get()));
+    }
+
+#ifdef BUILD_DESIGNSTUDIO
+    // handle events emitted from QDS
+    m_providers.push_back(std::make_unique<QDSEventsHandler>(m_tracker.get()));
+#endif
 
     for (const auto &provider : m_providers) {
         qCDebug(statLog) << "Created usage statistics provider"
