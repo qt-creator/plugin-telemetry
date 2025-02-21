@@ -137,9 +137,12 @@ public:
         Settings &s = theSettings();
 
         using namespace Layouting;
-        auto moreInformationLabel = new QLabel("<a "
-                                               "href=\"qthelp://org.qt-project.qtcreator/doc/"
-                                               "creator-how-to-collect-usage-statistics.html\">"
+        const QString helpUrl = ICore::isQtDesignStudio() ?
+                          QString("qtdesignstudio/doc/studio-collecting-usage-statistics.html\">")
+                        : QString("qtcreator/doc/creator-how-to-collect-usage-statistics.html\">");
+
+        auto moreInformationLabel = new QLabel("<a href=\"qthelp://org.qt-project."
+                                               + helpUrl
                                                + UsageStatisticPlugin::tr("More information")
                                                + "</a>");
         connect(moreInformationLabel, &QLabel::linkActivated, [this](const QString &link) {
