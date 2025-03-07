@@ -249,12 +249,6 @@ UsageStatisticPlugin::~UsageStatisticPlugin() = default;
 void UsageStatisticPlugin::initialize()
 {
     setupSettingsPage();
-
-    if (Core::ICore::isQtDesignStudio()) {
-        Utils::QtcSettings *settings = Core::ICore::settings();
-        settings->setValue("lastSessionCrashed", true); // value will persist unless cleared in aboutToShutdown()
-    }
-
     theSettings().readSettings();
 }
 
@@ -275,9 +269,6 @@ bool UsageStatisticPlugin::delayedInitialize()
 ExtensionSystem::IPlugin::ShutdownFlag UsageStatisticPlugin::aboutToShutdown()
 {
     theSettings().writeSettings();
-
-    Utils::QtcSettings *settings = Core::ICore::settings();
-    settings->remove("lastSessionCrashed");
 
     return SynchronousShutdown;
 }
