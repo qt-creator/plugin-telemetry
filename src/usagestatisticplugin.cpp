@@ -23,9 +23,9 @@
 #include <coreplugin/icore.h>
 #include <coreplugin/modemanager.h>
 
+#include <projectexplorer/buildsystem.h>
 #include <projectexplorer/project.h>
 #include <projectexplorer/projectmanager.h>
-#include <projectexplorer/target.h>
 
 #include <qtsupport/baseqtversion.h>
 #include <qtsupport/qtkitaspect.h>
@@ -109,16 +109,17 @@ public:
                 this,
                 [this, tracker](Project *project) {
                     connect(project, &Project::anyParsingFinished, this, [project, tracker] {
-                        if (!project->activeTarget())
+                        if (!project->activeBuildSystem())
                             return;
-                        if (!project->activeTarget()->kit())
+                        if (!project->activeBuildSystem()->kit())
                             return;
-                        QtVersion *qtVersion = QtKitAspect::qtVersion(project->activeTarget()->kit());
+                        QtVersion *qtVersion = QtKitAspect::qtVersion(
+                            project->activeBuildSystem()->kit());
                         if (!qtVersion)
                             return;
                         const FilePath qtLibPath = qtVersion->libraryPath();
                         using ModuleHash = QHash<QString, Utils::Link>;
-                        const ModuleHash all = project->activeTarget()
+                        const ModuleHash all = project->activeBuildSystem()
                                                    ->additionalData("FoundPackages")
                                                    .value<ModuleHash>();
                         QStringList qtPackages;

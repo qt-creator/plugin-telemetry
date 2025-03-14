@@ -1,4 +1,5 @@
 find_package(Qt6 COMPONENTS Widgets QuickWidgets InsightTracker REQUIRED)
+find_package(Qt6 OPTIONAL_COMPONENTS Test)
 find_package(QtCreator COMPONENTS Core TextEditor ProjectExplorer VcsBase REQUIRED)
 
 set(ENV_QTC_INSIGHT_TOKEN $ENV{QTC_INSIGHT_TOKEN})
