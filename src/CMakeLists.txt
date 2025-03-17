@@ -1,7 +1,3 @@
-find_package(Qt6 COMPONENTS Widgets QuickWidgets InsightTracker REQUIRED)
-find_package(Qt6 OPTIONAL_COMPONENTS Test)
-find_package(QtCreator COMPONENTS Core TextEditor ProjectExplorer VcsBase REQUIRED)
-
 set(ENV_QTC_INSIGHT_TOKEN $ENV{QTC_INSIGHT_TOKEN})
 set(ENV_QTC_INSIGHT_URL $ENV{QTC_INSIGHT_URL})
 set(QTC_INSIGHT_URL "${ENV_QTC_INSIGHT_URL}" CACHE STRING "URL for Qt Insight")
