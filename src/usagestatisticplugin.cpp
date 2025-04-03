@@ -175,9 +175,12 @@ public:
         Settings &s = theSettings();
 
         using namespace Layouting;
-        auto moreInformationLabel = new QLabel("<a "
-                                               "href=\"qthelp://org.qt-project.qtcreator/doc/"
-                                               "creator-how-to-collect-usage-statistics.html\">"
+        const QString helpUrl = ICore::isQtDesignStudio() ?
+                          QString("qtdesignstudio/doc/studio-collecting-usage-statistics.html\">")
+                        : QString("qtcreator/doc/creator-how-to-collect-usage-statistics.html\">");
+
+        auto moreInformationLabel = new QLabel("<a href=\"qthelp://org.qt-project."
+                                               + helpUrl
                                                + UsageStatisticPlugin::tr("More information")
                                                + "</a>");
         connect(moreInformationLabel, &QLabel::linkActivated, [this](const QString &link) {
@@ -247,12 +250,6 @@ UsageStatisticPlugin::~UsageStatisticPlugin() = default;
 void UsageStatisticPlugin::initialize()
 {
     setupSettingsPage();
-
-    if (Core::ICore::isQtDesignStudio()) {
-        Utils::QtcSettings *settings = Core::ICore::settings();
-        settings->setValue("lastSessionCrashed", true); // value will persist unless cleared in aboutToShutdown()
-    }
-
     theSettings().readSettings();
 }
 
@@ -273,9 +270,6 @@ bool UsageStatisticPlugin::delayedInitialize()
 ExtensionSystem::IPlugin::ShutdownFlag UsageStatisticPlugin::aboutToShutdown()
 {
     theSettings().writeSettings();
-
-    Utils::QtcSettings *settings = Core::ICore::settings();
-    settings->remove("lastSessionCrashed");
 
     return SynchronousShutdown;
 }
