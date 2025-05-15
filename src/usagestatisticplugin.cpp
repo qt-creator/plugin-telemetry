@@ -45,6 +45,7 @@ using namespace QtSupport;
 using namespace Utils;
 
 Q_LOGGING_CATEGORY(statLog, "qtc.usagestatistic", QtWarningMsg);
+Q_LOGGING_CATEGORY(qtmodulesLog, "qtc.usagestatistic.qtmodules", QtWarningMsg);
 Q_LOGGING_CATEGORY(qtexampleLog, "qtc.usagestatistic.qtexample", QtWarningMsg);
 
 const char kSettingsPageId[] = "UsageStatistic.PreferencesPage";
@@ -150,6 +151,7 @@ public:
                                              + "\",\"qtmodules\":[\"" + qtPackages.join("\",\"")
                                              + "\"],\"qtversion\":\""
                                              + qtVersion->qtVersion().toString() + "\"}";
+                        qCDebug(qtmodulesLog) << qPrintable(json);
                         tracker->interaction("QtModules", json, 0);
                     });
                 });
