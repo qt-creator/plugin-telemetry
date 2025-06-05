@@ -29,6 +29,7 @@
 
 #include <qtsupport/baseqtversion.h>
 #include <qtsupport/qtkitaspect.h>
+#include <qtsupport/qtversionmanager.h>
 
 #include <QCryptographicHash>
 #include <QGuiApplication>
@@ -44,12 +45,25 @@ using namespace QtSupport;
 using namespace Utils;
 
 Q_LOGGING_CATEGORY(statLog, "qtc.usagestatistic", QtWarningMsg);
+Q_LOGGING_CATEGORY(qtmodulesLog, "qtc.usagestatistic.qtmodules", QtWarningMsg);
+Q_LOGGING_CATEGORY(qtexampleLog, "qtc.usagestatistic.qtexample", QtWarningMsg);
 
 const char kSettingsPageId[] = "UsageStatistic.PreferencesPage";
 
 namespace UsageStatistic::Internal {
 
 static UsageStatisticPlugin *m_instance = nullptr;
+
+static QString hashed(const QString &path)
+{
+    return QString::fromLatin1(
+        QCryptographicHash::hash(path.toUtf8(), QCryptographicHash::Sha1).toHex());
+}
+
+static QString projectId(Project *project)
+{
+    return hashed(project->projectFilePath().toFSPathString());
+}
 
 class ModeChanges : public QObject
 {
@@ -133,13 +147,47 @@ public:
                         }
                         if (qtPackages.isEmpty())
                             return;
-                        const QString projectID = QString::fromLatin1(
-                            QCryptographicHash::hash(project->projectFilePath().toFSPathString().toUtf8(),
-                                                     QCryptographicHash::Sha1)
-                                .toHex());
-                        const QString json = "{\"projectid\":\"" + projectID + "\",\"qtmodules\":[\""
-                                             + qtPackages.join("\",\"") + "\"]}";
+                        const QString json = "{\"projectid\":\"" + projectId(project)
+                                             + "\",\"qtmodules\":[\"" + qtPackages.join("\",\"")
+                                             + "\"],\"qtversion\":\""
+                                             + qtVersion->qtVersion().toString() + "\"}";
+                        qCDebug(qtmodulesLog) << qPrintable(json);
                         tracker->interaction("QtModules", json, 0);
+                    });
+                });
+    }
+};
+
+class QtExample : public QObject
+{
+    Q_OBJECT
+public:
+    QtExample(QInsightTracker *tracker)
+    {
+        connect(ProjectManager::instance(),
+                &ProjectManager::projectAdded,
+                this,
+                [this, tracker](Project *project) {
+                    connect(project, &Project::anyParsingFinished, this, [project, tracker] {
+                        const QtVersions versions = QtVersionManager::versions();
+                        for (QtVersion *qtVersion : versions) {
+                            const FilePath examplesPath = qtVersion->examplesPath();
+                            if (examplesPath.isEmpty())
+                                continue;
+                            if (!project->projectFilePath().isChildOf(examplesPath))
+                                continue;
+                            const FilePath examplePath = project->projectFilePath()
+                                                             .relativeChildPath(examplesPath)
+                                                             .parentDir();
+                            const QString exampleHash = hashed(examplePath.path());
+                            const QString json = "{\"projectid\":\"" + projectId(project)
+                                                 + "\",\"qtexample\":\"" + exampleHash
+                                                 + "\",\"qtversion\":\""
+                                                 + qtVersion->qtVersion().toString() + "\"}";
+                            qCDebug(qtexampleLog) << qPrintable(json);
+                            tracker->interaction("QtExample", json, 0);
+                            return;
+                        }
                     });
                 });
     }
@@ -361,6 +409,7 @@ void UsageStatisticPlugin::createProviders()
     // startup configs first, otherwise they will be attributed to the UI state
     m_providers.push_back(std::make_unique<Theme>(m_tracker.get()));
     m_providers.push_back(std::make_unique<QtModules>(m_tracker.get()));
+    m_providers.push_back(std::make_unique<QtExample>(m_tracker.get()));
 
     // not needed for QDS
     if (!ICore::isQtDesignStudio()) {
