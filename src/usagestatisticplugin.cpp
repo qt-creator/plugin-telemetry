@@ -322,10 +322,24 @@ ExtensionSystem::IPlugin::ShutdownFlag UsageStatisticPlugin::aboutToShutdown()
     return SynchronousShutdown;
 }
 
-static constexpr int submissionInterval()
+static constexpr int defaultSubmissionInterval()
 {
     using namespace std::literals;
     return std::chrono::hours(1) / 1s;
+}
+
+static constexpr int defaultBatchSize()
+{
+    return 100;
+}
+
+static int fromEnvironment(const QString &key, int defaultValue)
+{
+    bool ok = false;
+    const int env = qtcEnvironmentVariableIntValue(key, &ok);
+    if (ok)
+        return env;
+    return defaultValue;
 }
 
 void UsageStatisticPlugin::configureInsight()
@@ -353,8 +367,9 @@ void UsageStatisticPlugin::configureInsight()
             qCDebug(statLog) << "Cache path:" << config->storagePath();
             // TODO provide a button for removing the cache?
             // TODO config->setStorageSize(???); // unlimited by default
-            config->setSyncInterval(submissionInterval());
-            config->setBatchSize(100);
+            config->setSyncInterval(
+                fromEnvironment("QTC_INSIGHT_SUBMISSIONINTERVAL", defaultSubmissionInterval()));
+            config->setBatchSize(fromEnvironment("QTC_INSIGHT_BATCHSIZE", defaultBatchSize()));
             config->setDeviceModel(QString("%1 (%2)").arg(QSysInfo::productType(),
                                                           QSysInfo::currentCpuArchitecture()));
             config->setDeviceVariant(QSysInfo::productVersion());
