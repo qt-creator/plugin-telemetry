@@ -121,6 +121,21 @@ public:
     }
 };
 
+class AndroidManifestGuiEnabled : public QObject
+{
+    Q_OBJECT
+
+public:
+    AndroidManifestGuiEnabled(QInsightTracker *tracker)
+    {
+        connect(ExtensionSystem::PluginManager::instance(), &ExtensionSystem::PluginManager::objectAdded,
+        this, [this, tracker](QObject *object) {
+            if (object->objectName() == QString("AndroidManifestEditorEnabled"))
+                addEvent(tracker, ":ANDROID:ManifestGuiEditorEnabled", object->objectName());
+        });
+    }
+};
+
 class QtModules : public QObject
 {
     Q_OBJECT
@@ -445,6 +460,9 @@ void UsageStatisticPlugin::createProviders()
 
         // UI state last
         m_providers.push_back(std::make_unique<ModeChanges>(m_tracker.get()));
+
+        //Android Manifest enabled
+        m_providers.push_back(std::make_unique<AndroidManifestGuiEnabled>(m_tracker.get()));
     }
 
 #ifdef BUILD_DESIGNSTUDIO
