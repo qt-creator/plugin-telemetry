@@ -10,12 +10,18 @@
 
 #include <extensionsystem/pluginmanager.h>
 #include <extensionsystem/pluginspec.h>
+#include <solutions/tasking/tasktreerunner.h>
 #include <utils/algorithm.h>
 #include <utils/appinfo.h>
 #include <utils/aspects.h>
+#include <utils/async.h>
 #include <utils/infobar.h>
 #include <utils/layoutbuilder.h>
 #include <utils/link.h>
+#include <utils/mimeconstants.h>
+#include <utils/mimeutils.h>
+#include <utils/qtcprocess.h>
+#include <utils/temporaryfile.h>
 #include <utils/theme/theme.h>
 
 #include <coreplugin/dialogs/ioptionspage.h>
@@ -23,6 +29,7 @@
 #include <coreplugin/icore.h>
 #include <coreplugin/modemanager.h>
 
+#include <projectexplorer/buildmanager.h>
 #include <projectexplorer/buildsystem.h>
 #include <projectexplorer/project.h>
 #include <projectexplorer/projectmanager.h>
@@ -35,6 +42,9 @@
 #include <QGuiApplication>
 #include <QInsightConfiguration>
 #include <QInsightTracker>
+#include <QJsonArray>
+#include <QJsonDocument>
+#include <QJsonObject>
 #include <QMetaEnum>
 #include <QTimer>
 
@@ -47,6 +57,7 @@ using namespace Utils;
 Q_LOGGING_CATEGORY(statLog, "qtc.usagestatistic", QtWarningMsg);
 Q_LOGGING_CATEGORY(qtmodulesLog, "qtc.usagestatistic.qtmodules", QtWarningMsg);
 Q_LOGGING_CATEGORY(qtexampleLog, "qtc.usagestatistic.qtexample", QtWarningMsg);
+Q_LOGGING_CATEGORY(qmlmodulesLog, "qtc.usagestatistic.qmlmodules", QtWarningMsg);
 
 const char kSettingsPageId[] = "UsageStatistic.PreferencesPage";
 
@@ -180,6 +191,216 @@ public:
                     });
                 });
     }
+};
+
+class QmlModules : public QObject
+{
+    Q_OBJECT
+
+public:
+    using ScanStorage = Tasking::Storage<std::unique_ptr<TemporaryFilePath>>;
+
+    QmlModules(QInsightTracker *tracker)
+    {
+        // Management code for being able to access the project's import paths
+        // Would be nice if this was available more directly from the project->activeBuildSystem()
+        connect(
+            ProjectManager::instance(),
+            &ProjectManager::extraProjectInfoChanged,
+            this,
+            [this](BuildConfiguration *bc, const ProjectExplorer::QmlCodeModelInfo &extra) {
+                m_qmlCodeModelInfo.insert(bc, extra);
+            });
+        connect(
+            ProjectManager::instance(),
+            &ProjectManager::buildConfigurationRemoved,
+            this,
+            [this](BuildConfiguration *bc) { m_qmlCodeModelInfo.remove(bc); });
+        // The actual retrieval of QML modules
+        connect(
+            BuildManager::instance(),
+            &BuildManager::buildStateChanged,
+            this,
+            [this, tracker](Project *project) {
+                if (!shouldStartCollectingFor(project))
+                    return;
+
+                if (!project->activeBuildSystem())
+                    return;
+                if (!project->activeBuildSystem()->kit())
+                    return;
+                QtVersion *qtVersion = QtKitAspect::qtVersion(project->activeBuildSystem()->kit());
+                if (!qtVersion)
+                    return;
+                const FilePath qmlimportscanner = qtVersion->hostLibexecPath()
+                                                      .pathAppended("qmlimportscanner")
+                                                      .withExecutableSuffix();
+                const FilePath qtImportPath = qtVersion->qmlPath();
+                FilePaths importPaths
+                    = m_qmlCodeModelInfo.value(project->activeBuildConfiguration()).qmlImportPaths;
+                if (!qtImportPath.isEmpty())
+                    importPaths << qtImportPath;
+                const FilePaths qmlFiles = project->files([](const Node *n) -> bool {
+                    const FilePath filePath = n->filePath();
+                    if (!n->asFileNode() || n->isGenerated() || !n->isEnabled()
+                        || filePath.isEmpty())
+                        return false;
+                    const MimeType mimeType
+                        = mimeTypeForFile(filePath, MimeMatchMode::MatchExtension);
+                    return mimeType.matchesName(Utils::Constants::QML_MIMETYPE)
+                           || mimeType.matchesName(Utils::Constants::QMLUI_MIMETYPE);
+                });
+                qCDebug(qmlmodulesLog) << QString("Starting \"%1\" for project \"%2\" and files %3")
+                                              .arg(
+                                                  qmlimportscanner.toUserOutput(),
+                                                  project->displayName(),
+                                                  qmlFiles.toUserOutput(", "));
+                const QString id = projectId(project);
+                const QString qtVersionString = qtVersion->qtVersion().toString();
+
+                const ScanStorage storage;
+
+                m_runner.start(
+                    project,
+                    Tasking::Group{
+                        Tasking::sequential,
+                        storage,
+                        createResponseFile(storage, qmlimportscanner, qmlFiles, importPaths),
+                        runQmlImportScanner(storage, qmlimportscanner, id, qtVersionString, tracker)});
+            });
+    }
+
+    Tasking::ExecutableItem createResponseFile(
+        const ScanStorage &storage,
+        const FilePath &qmlimportscanner,
+        const FilePaths &qmlFiles,
+        const FilePaths &importPaths)
+    {
+        const auto setup = [qmlimportscanner, qmlFiles, importPaths](
+                               Async<Result<TemporaryFilePath *>> &async) {
+            async.setConcurrentCallData(
+                [](const FilePath &qmlimportscanner,
+                   const FilePaths &qmlFiles,
+                   const FilePaths &importPaths) -> Result<TemporaryFilePath *> {
+                    // Remove files that do not exist
+                    const FilePaths actualQmlFiles = Utils::filtered(qmlFiles, &FilePath::exists);
+                    const Result<FilePath> tmpDir = qmlimportscanner.tmpDir();
+                    if (!tmpDir)
+                        return ResultError("Failed to determine temporary directory");
+                    auto tempPath = TemporaryFilePath::create(
+                        tmpDir->pathAppended("qmlimportscanner.rsp"));
+                    if (!tempPath) {
+                        return ResultError(
+                            QString("Failed to create response file: %1").arg(tempPath.error()));
+                    }
+                    QByteArrayList arguments = {"-qmlFiles"};
+                    for (const FilePath &file : actualQmlFiles)
+                        arguments << file.nativePath().toUtf8();
+                    for (const FilePath &importPath : importPaths)
+                        arguments << "-importPath" << importPath.nativePath().toUtf8();
+                    if (Result<qint64> writeResult = (*tempPath)->filePath().writeFileContents(
+                            arguments.join('\n'));
+                        !writeResult) {
+                        return ResultError(
+                            QString("Failed to create response file: %1").arg(writeResult.error()));
+                    }
+                    return tempPath->release();
+                },
+                qmlimportscanner,
+                qmlFiles,
+                importPaths);
+        };
+        const auto done = [storage](const Async<Result<TemporaryFilePath *>> &async) {
+            Result<TemporaryFilePath *> result = async.result();
+            if (!result) {
+                qCDebug(qmlmodulesLog) << "Failed to set up qmlimportscanner:" << result.error();
+                return Tasking::DoneResult::Error;
+            }
+            storage->reset(*result);
+            return Tasking::DoneResult::Success;
+        };
+        return AsyncTask<Result<TemporaryFilePath *>>(setup, done);
+    }
+
+    Tasking::ExecutableItem runQmlImportScanner(
+        const ScanStorage &storage,
+        const FilePath &qmlimportscanner,
+        const QString &projectId,
+        const QString &qtVersionString,
+        QInsightTracker *tracker)
+    {
+        const auto setup = [qmlimportscanner, storage](Process &process) {
+            process.setCommand({qmlimportscanner, {"@" + (*storage)->filePath().nativePath()}});
+        };
+        const auto done = [projectId,
+                           qtVersionString,
+                           tracker = QPointer<QInsightTracker>(tracker)](const Process &process) {
+            QJsonParseError error;
+            const auto doc = QJsonDocument::fromJson(process.rawStdOut(), &error);
+            if (error.error != QJsonParseError::NoError) {
+                qCDebug(qmlmodulesLog) << "Parse error:" << error.errorString();
+                qCDebug(qmlmodulesLog) << "At:" << error.offset;
+                qCDebug(qmlmodulesLog) << "Stdout:";
+                qCDebug(qmlmodulesLog) << qPrintable(process.stdOut());
+                qCDebug(qmlmodulesLog) << "Stderr:";
+                qCDebug(qmlmodulesLog) << qPrintable(process.stdErr());
+                return;
+            }
+            qCDebug(qmlmodulesLog) << "Response:" << qPrintable(QString::fromUtf8(doc.toJson()));
+            if (!doc.isArray()) {
+                qCDebug(qmlmodulesLog) << "Unexpected response, not a JSON array";
+                return;
+            }
+            QStringList qmlModules;
+            const QJsonArray array = doc.array();
+            for (const QJsonValue &v : array) {
+                const QJsonObject obj = v.toObject();
+                const QString name = obj.value("name").toString();
+                if (name.isEmpty()) {
+                    qCDebug(qmlmodulesLog) << "Skipping import without name";
+                    continue;
+                }
+                const QString type = obj.value("type").toString();
+                if (type != "module") {
+                    qCDebug(qmlmodulesLog) << "Skipping import with type \"" + type + "\"";
+                    continue;
+                }
+                qmlModules += name;
+            }
+            if (qmlModules.isEmpty())
+                return;
+            // - the list of modules can contain all kinds of user defined modules too, since
+            //   we need to add the user import paths to catch the QDS modules
+            // - a hardcoded whitelist here would be ugly because older Qt Creator versions would
+            //   filter out new QML modules in newer Qt versions
+            // - so send a hash of the module "name" to telemetry, and the script that processes
+            //   that data has a mapping of hash -> known Qt module
+            const QStringList moduleHashes = Utils::transform(qmlModules, hashed);
+            const QString json = "{\"projectid\":\"" + projectId + "\",\"qmlmodules\":[\""
+                                 + moduleHashes.join("\",\"") + "\"],\"qtversion\":\""
+                                 + qtVersionString + "\"}";
+            qCDebug(qmlmodulesLog) << qPrintable(json);
+            addEvent(tracker, "QmlModules", json);
+        };
+        return ProcessTask(setup, done);
+    }
+
+    bool shouldStartCollectingFor(Project *project)
+    {
+        if (!BuildManager::isBuilding(project)) {
+            m_buildingProjects.remove(project);
+            return false;
+        }
+        if (!Utils::insert(m_buildingProjects, project)) // already seen before as "building"
+            return false;
+
+        // don't interrupt a running scan
+        return !m_runner.isKeyRunning(project);
+    }
+
+    QHash<BuildConfiguration *, QmlCodeModelInfo> m_qmlCodeModelInfo;
+    QSet<Project *> m_buildingProjects;
+    Tasking::MappedTaskTreeRunner<Project *> m_runner;
 };
 
 class QtExample : public QObject
@@ -452,6 +673,7 @@ void UsageStatisticPlugin::createProviders()
 #if QT_VERSION >= QT_WITH_CONTEXTDATA
     m_providers.push_back(std::make_unique<QtModules>(m_tracker.get()));
     m_providers.push_back(std::make_unique<QtExample>(m_tracker.get()));
+    m_providers.push_back(std::make_unique<QmlModules>(m_tracker.get()));
 #endif
 
     // not needed for QDS
