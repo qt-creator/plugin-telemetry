@@ -1,7 +1,3 @@
-find_package(Qt6 COMPONENTS Widgets QuickWidgets InsightTracker REQUIRED)
-find_package(Qt6 OPTIONAL_COMPONENTS Test)
-find_package(QtCreator COMPONENTS Core TextEditor ProjectExplorer VcsBase REQUIRED)
-
 set(ENV_QTC_INSIGHT_TOKEN $ENV{QTC_INSIGHT_TOKEN})
 set(ENV_QTC_INSIGHT_URL $ENV{QTC_INSIGHT_URL})
 set(QTC_INSIGHT_URL "${ENV_QTC_INSIGHT_URL}" CACHE STRING "URL for Qt Insight")
@@ -55,15 +51,28 @@ if(TARGET UsageStatistic)
     # copy the framework
     get_target_property(location Qt::InsightTracker LOCATION)
     string(REGEX REPLACE "(/.*[.]framework)/.*" "\\1" framework "${location}")
+    if(CMAKE_MATCH_1)
+      set(lib_is_framework TRUE)
+    else()
+      set(lib_is_framework FALSE)
+    endif()
 
-    install(DIRECTORY ${framework}
-      DESTINATION ${IDE_LIBRARY_PATH}
-      COMPONENT Dependencies
-      EXCLUDE_FROM_ALL
-      FILES_MATCHING
-        PATTERN "*"
-        REGEX "/Headers.*" EXCLUDE
-    )
+    if(lib_is_framework)
+      install(DIRECTORY "${framework}"
+        DESTINATION ${IDE_LIBRARY_PATH}
+        COMPONENT Dependencies
+        EXCLUDE_FROM_ALL
+        FILES_MATCHING
+          PATTERN "*"
+          REGEX "/Headers.*" EXCLUDE
+      )
+    else()
+      install(FILES "${location}"
+        DESTINATION ${IDE_LIBRARY_PATH}
+        COMPONENT Dependencies
+        EXCLUDE_FROM_ALL
+      )
+    endif()
   elseif(WIN32)
     # copy the DLL
     get_target_property(location Qt::InsightTracker LOCATION)
