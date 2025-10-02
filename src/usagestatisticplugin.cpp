@@ -23,12 +23,13 @@
 #include <coreplugin/icore.h>
 #include <coreplugin/modemanager.h>
 
+#include <projectexplorer/buildsystem.h>
 #include <projectexplorer/project.h>
 #include <projectexplorer/projectmanager.h>
-#include <projectexplorer/target.h>
 
 #include <qtsupport/baseqtversion.h>
 #include <qtsupport/qtkitaspect.h>
+#include <qtsupport/qtversionmanager.h>
 
 #include <QCryptographicHash>
 #include <QGuiApplication>
@@ -44,12 +45,36 @@ using namespace QtSupport;
 using namespace Utils;
 
 Q_LOGGING_CATEGORY(statLog, "qtc.usagestatistic", QtWarningMsg);
+Q_LOGGING_CATEGORY(qtmodulesLog, "qtc.usagestatistic.qtmodules", QtWarningMsg);
+Q_LOGGING_CATEGORY(qtexampleLog, "qtc.usagestatistic.qtexample", QtWarningMsg);
 
 const char kSettingsPageId[] = "UsageStatistic.PreferencesPage";
 
 namespace UsageStatistic::Internal {
 
 static UsageStatisticPlugin *m_instance = nullptr;
+
+#define QT_WITH_CONTEXTDATA QT_VERSION_CHECK(6, 9, 2)
+
+static void addEvent(QInsightTracker *tracker, const QString &key, const QString &data)
+{
+#if QT_VERSION >= QT_WITH_CONTEXTDATA
+    tracker->contextData(key, data);
+#else
+    tracker->interaction(key, data, 0);
+#endif
+}
+
+static QString hashed(const QString &path)
+{
+    return QString::fromLatin1(
+        QCryptographicHash::hash(path.toUtf8(), QCryptographicHash::Sha1).toHex());
+}
+
+static QString projectId(Project *project)
+{
+    return hashed(project->projectFilePath().toFSPathString());
+}
 
 class ModeChanges : public QObject
 {
@@ -74,11 +99,11 @@ class UILanguage : public QObject
 public:
     UILanguage(QInsightTracker *tracker)
     {
-        tracker->interaction(":CONFIG:UILanguage", ICore::userInterfaceLanguage(), 0);
+        addEvent(tracker, ":CONFIG:UILanguage", ICore::userInterfaceLanguage());
         const QStringList languages = QLocale::system().uiLanguages();
-        tracker->interaction(":CONFIG:SystemLanguage",
-                             languages.isEmpty() ? QString("Unknown") : languages.first(),
-                             0);
+        addEvent(tracker,
+                 ":CONFIG:SystemLanguage",
+                 languages.isEmpty() ? QString("Unknown") : languages.first());
     }
 };
 
@@ -88,13 +113,11 @@ class Theme : public QObject
 public:
     Theme(QInsightTracker *tracker)
     {
-        tracker->interaction(":CONFIG:Theme",
-                             creatorTheme() ? creatorTheme()->id() : QString("Unknown"),
-                             0);
+        addEvent(tracker, ":CONFIG:Theme", creatorTheme() ? creatorTheme()->id() : QString("Unknown"));
         const QString systemTheme = QString::fromUtf8(QMetaEnum::fromType<Qt::ColorScheme>().valueToKey(
                                                           int(Utils::Theme::systemColorScheme())))
                                         .toLower();
-        tracker->interaction(":CONFIG:SystemTheme", systemTheme, 0);
+        addEvent(tracker, ":CONFIG:SystemTheme", systemTheme);
     }
 };
 
@@ -109,16 +132,17 @@ public:
                 this,
                 [this, tracker](Project *project) {
                     connect(project, &Project::anyParsingFinished, this, [project, tracker] {
-                        if (!project->activeTarget())
+                        if (!project->activeBuildSystem())
                             return;
-                        if (!project->activeTarget()->kit())
+                        if (!project->activeBuildSystem()->kit())
                             return;
-                        QtVersion *qtVersion = QtKitAspect::qtVersion(project->activeTarget()->kit());
+                        QtVersion *qtVersion = QtKitAspect::qtVersion(
+                            project->activeBuildSystem()->kit());
                         if (!qtVersion)
                             return;
                         const FilePath qtLibPath = qtVersion->libraryPath();
                         using ModuleHash = QHash<QString, Utils::Link>;
-                        const ModuleHash all = project->activeTarget()
+                        const ModuleHash all = project->activeBuildSystem()
                                                    ->additionalData("FoundPackages")
                                                    .value<ModuleHash>();
                         QStringList qtPackages;
@@ -132,13 +156,47 @@ public:
                         }
                         if (qtPackages.isEmpty())
                             return;
-                        const QString projectID = QString::fromLatin1(
-                            QCryptographicHash::hash(project->projectFilePath().toFSPathString().toUtf8(),
-                                                     QCryptographicHash::Sha1)
-                                .toHex());
-                        const QString json = "{\"projectid\":\"" + projectID + "\",\"qtmodules\":[\""
-                                             + qtPackages.join("\",\"") + "\"]}";
-                        tracker->interaction("QtModules", json, 0);
+                        const QString json = "{\"projectid\":\"" + projectId(project)
+                                             + "\",\"qtmodules\":[\"" + qtPackages.join("\",\"")
+                                             + "\"],\"qtversion\":\""
+                                             + qtVersion->qtVersion().toString() + "\"}";
+                        qCDebug(qtmodulesLog) << qPrintable(json);
+                        addEvent(tracker, "QtModules", json);
+                    });
+                });
+    }
+};
+
+class QtExample : public QObject
+{
+    Q_OBJECT
+public:
+    QtExample(QInsightTracker *tracker)
+    {
+        connect(ProjectManager::instance(),
+                &ProjectManager::projectAdded,
+                this,
+                [this, tracker](Project *project) {
+                    connect(project, &Project::anyParsingFinished, this, [project, tracker] {
+                        const QtVersions versions = QtVersionManager::versions();
+                        for (QtVersion *qtVersion : versions) {
+                            const FilePath examplesPath = qtVersion->examplesPath();
+                            if (examplesPath.isEmpty())
+                                continue;
+                            if (!project->projectFilePath().isChildOf(examplesPath))
+                                continue;
+                            const FilePath examplePath = project->projectFilePath()
+                                                             .relativeChildPath(examplesPath)
+                                                             .parentDir();
+                            const QString exampleHash = hashed(examplePath.path());
+                            const QString json = "{\"projectid\":\"" + projectId(project)
+                                                 + "\",\"qtexample\":\"" + exampleHash
+                                                 + "\",\"qtversion\":\""
+                                                 + qtVersion->qtVersion().toString() + "\"}";
+                            qCDebug(qtexampleLog) << qPrintable(json);
+                            addEvent(tracker, "QtExample", json);
+                            return;
+                        }
                     });
                 });
     }
@@ -273,10 +331,24 @@ ExtensionSystem::IPlugin::ShutdownFlag UsageStatisticPlugin::aboutToShutdown()
     return SynchronousShutdown;
 }
 
-static constexpr int submissionInterval()
+static constexpr int defaultSubmissionInterval()
 {
     using namespace std::literals;
     return std::chrono::hours(1) / 1s;
+}
+
+static constexpr int defaultBatchSize()
+{
+    return 100;
+}
+
+static int fromEnvironment(const QString &key, int defaultValue)
+{
+    bool ok = false;
+    const int env = qtcEnvironmentVariableIntValue(key, &ok);
+    if (ok)
+        return env;
+    return defaultValue;
 }
 
 void UsageStatisticPlugin::configureInsight()
@@ -304,8 +376,9 @@ void UsageStatisticPlugin::configureInsight()
             qCDebug(statLog) << "Cache path:" << config->storagePath();
             // TODO provide a button for removing the cache?
             // TODO config->setStorageSize(???); // unlimited by default
-            config->setSyncInterval(submissionInterval());
-            config->setBatchSize(100);
+            config->setSyncInterval(
+                fromEnvironment("QTC_INSIGHT_SUBMISSIONINTERVAL", defaultSubmissionInterval()));
+            config->setBatchSize(fromEnvironment("QTC_INSIGHT_BATCHSIZE", defaultBatchSize()));
             config->setDeviceModel(QString("%1 (%2)").arg(QSysInfo::productType(),
                                                           QSysInfo::currentCpuArchitecture()));
             config->setDeviceVariant(QSysInfo::productVersion());
@@ -359,7 +432,12 @@ void UsageStatisticPlugin::createProviders()
 {
     // startup configs first, otherwise they will be attributed to the UI state
     m_providers.push_back(std::make_unique<Theme>(m_tracker.get()));
+    // module and example telemetry require QInsightTracker::contextData to
+    // work reliably, because the key of QInsightTracker::interaction is limited to 255 characters.
+#if QT_VERSION >= QT_WITH_CONTEXTDATA
     m_providers.push_back(std::make_unique<QtModules>(m_tracker.get()));
+    m_providers.push_back(std::make_unique<QtExample>(m_tracker.get()));
+#endif
 
     // not needed for QDS
     if (!ICore::isQtDesignStudio()) {
