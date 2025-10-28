@@ -4,10 +4,6 @@
 #include "usagestatisticplugin.h"
 #include "coreplugin/actionmanager/actionmanager.h"
 
-#ifdef BUILD_DESIGNSTUDIO
-#include "qdseventshandler.h"
-#endif
-
 #include <extensionsystem/pluginmanager.h>
 #include <extensionsystem/pluginspec.h>
 #include <solutions/tasking/tasktreerunner.h>
@@ -468,14 +464,11 @@ public:
         Settings &s = theSettings();
 
         using namespace Layouting;
-        const QString helpUrl = ICore::isQtDesignStudio() ?
-                          QString("qtdesignstudio/doc/studio-collecting-usage-statistics.html\">")
-                        : QString("qtcreator/doc/creator-how-to-collect-usage-statistics.html\">");
-
-        auto moreInformationLabel = new QLabel("<a href=\"qthelp://org.qt-project."
-                                               + helpUrl
-                                               + UsageStatisticPlugin::tr("More information")
-                                               + "</a>");
+        auto moreInformationLabel = new QLabel(
+            "<a "
+            "href=\"qthelp://org.qt-project.qtcreator/doc/"
+            "creator-how-to-collect-usage-statistics.html\">"
+            + UsageStatisticPlugin::tr("More information") + "</a>");
         connect(moreInformationLabel, &QLabel::linkActivated, [this](const QString &link) {
             HelpManager::showHelpUrl(link, HelpManager::ExternalHelpAlways);
         });
@@ -676,21 +669,13 @@ void UsageStatisticPlugin::createProviders()
     m_providers.push_back(std::make_unique<QmlModules>(m_tracker.get()));
 #endif
 
-    // not needed for QDS
-    if (!ICore::isQtDesignStudio()) {
-        m_providers.push_back(std::make_unique<UILanguage>(m_tracker.get()));
+    m_providers.push_back(std::make_unique<UILanguage>(m_tracker.get()));
 
-        // UI state last
-        m_providers.push_back(std::make_unique<ModeChanges>(m_tracker.get()));
+    // UI state last
+    m_providers.push_back(std::make_unique<ModeChanges>(m_tracker.get()));
 
-        //Android Manifest enabled
-        m_providers.push_back(std::make_unique<AndroidManifestGuiEnabled>(m_tracker.get()));
-    }
-
-#ifdef BUILD_DESIGNSTUDIO
-    // handle events emitted from QDS
-    m_providers.push_back(std::make_unique<QDSEventsHandler>(m_tracker.get()));
-#endif
+    //Android Manifest enabled
+    m_providers.push_back(std::make_unique<AndroidManifestGuiEnabled>(m_tracker.get()));
 
     for (const auto &provider : m_providers) {
         qCDebug(statLog) << "Created usage statistics provider"
