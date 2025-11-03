@@ -250,6 +250,11 @@ public:
                     return mimeType.matchesName(Utils::Constants::QML_MIMETYPE)
                            || mimeType.matchesName(Utils::Constants::QMLUI_MIMETYPE);
                 });
+                if (qmlFiles.isEmpty()) {
+                    qCDebug(qmlmodulesLog) << QString("No QML files found for project \"%1\".")
+                                                  .arg(project->displayName());
+                    return;
+                }
                 qCDebug(qmlmodulesLog) << QString("Starting \"%1\" for project \"%2\" and files %3")
                                               .arg(
                                                   qmlimportscanner.toUserOutput(),
