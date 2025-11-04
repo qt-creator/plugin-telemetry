@@ -6,7 +6,6 @@
 
 #include <extensionsystem/pluginmanager.h>
 #include <extensionsystem/pluginspec.h>
-#include <solutions/tasking/tasktreerunner.h>
 #include <utils/algorithm.h>
 #include <utils/appinfo.h>
 #include <utils/aspects.h>
@@ -33,6 +32,8 @@
 #include <qtsupport/baseqtversion.h>
 #include <qtsupport/qtkitaspect.h>
 #include <qtsupport/qtversionmanager.h>
+
+#include <QtTaskTree/QSingleTaskTreeRunner>
 
 #include <QCryptographicHash>
 #include <QGuiApplication>
@@ -194,7 +195,7 @@ class QmlModules : public QObject
     Q_OBJECT
 
 public:
-    using ScanStorage = Tasking::Storage<std::unique_ptr<TemporaryFilePath>>;
+    using ScanStorage = QtTaskTree::Storage<std::unique_ptr<TemporaryFilePath>>;
 
     QmlModules(QInsightTracker *tracker)
     {
@@ -258,15 +259,15 @@ public:
 
                 m_runner.start(
                     project,
-                    Tasking::Group{
-                        Tasking::sequential,
+                    QtTaskTree::Group{
+                        QtTaskTree::sequential,
                         storage,
                         createResponseFile(storage, qmlimportscanner, qmlFiles, importPaths),
                         runQmlImportScanner(storage, qmlimportscanner, id, qtVersionString, tracker)});
             });
     }
 
-    Tasking::ExecutableItem createResponseFile(
+    QtTaskTree::ExecutableItem createResponseFile(
         const ScanStorage &storage,
         const FilePath &qmlimportscanner,
         const FilePaths &qmlFiles,
@@ -310,15 +311,15 @@ public:
             Result<TemporaryFilePath *> result = async.result();
             if (!result) {
                 qCDebug(qmlmodulesLog) << "Failed to set up qmlimportscanner:" << result.error();
-                return Tasking::DoneResult::Error;
+                return QtTaskTree::DoneResult::Error;
             }
             storage->reset(*result);
-            return Tasking::DoneResult::Success;
+            return QtTaskTree::DoneResult::Success;
         };
         return AsyncTask<Result<TemporaryFilePath *>>(setup, done);
     }
 
-    Tasking::ExecutableItem runQmlImportScanner(
+    QtTaskTree::ExecutableItem runQmlImportScanner(
         const ScanStorage &storage,
         const FilePath &qmlimportscanner,
         const QString &projectId,
@@ -396,7 +397,7 @@ public:
 
     QHash<BuildConfiguration *, QmlCodeModelInfo> m_qmlCodeModelInfo;
     QSet<Project *> m_buildingProjects;
-    Tasking::MappedTaskTreeRunner<Project *> m_runner;
+    QMappedTaskTreeRunner<Project *> m_runner;
 };
 
 class QtExample : public QObject
