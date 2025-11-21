@@ -19,6 +19,7 @@
 #include <utils/temporaryfile.h>
 #include <utils/theme/theme.h>
 
+#include <coreplugin/designmode.h>
 #include <coreplugin/dialogs/ioptionspage.h>
 #include <coreplugin/helpmanager.h>
 #include <coreplugin/icore.h>
@@ -91,7 +92,10 @@ public:
     ModeChanges(QInsightTracker *tracker)
     {
         const auto id = [](const Id &modeId) -> QString {
-            return ":MODE:" + QString::fromUtf8(modeId.name());
+            QString ret = ":MODE:" + QString::fromUtf8(modeId.name());
+            if (modeId == Core::Constants::MODE_DESIGN)
+                ret += ":" + QString::fromUtf8(DesignMode::currentDesignWidget().name());
+            return ret;
         };
         connect(ModeManager::instance(), &ModeManager::currentModeChanged, this, [=](const Id &modeId) {
             tracker->transition(id(modeId));
