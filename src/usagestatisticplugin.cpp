@@ -502,7 +502,6 @@ public:
             m_instance->configureInsight();
         });
         setOnCancel([] { theSettings().cancel(); });
-        setOnFinish([] { theSettings().finish(); });
     }
 };
 
