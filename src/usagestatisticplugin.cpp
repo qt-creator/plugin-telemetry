@@ -148,6 +148,30 @@ class QtModules : public QObject
 {
     Q_OBJECT
 public:
+    static QStringList getQtPackages(Project *project, QtVersion *qtVersion)
+    {
+        if (!qtVersion)
+            return {};
+        const FilePath qtLibPath = qtVersion->libraryPath();
+        using ModuleHash = QHash<QString, Utils::Link>;
+        const ModuleHash all
+            = project->activeBuildSystem()->additionalData("FoundPackages").value<ModuleHash>();
+        QStringList packages;
+        for (auto it = all.begin(); it != all.end(); ++it) {
+            const QString name = it.key();
+            const FilePath cmakePath = it.value().targetFilePath;
+            if (name.size() > 4 && name.startsWith("Qt") && name[2].isDigit() && name[3].isUpper()
+                && !name.endsWith("plugin", Qt::CaseInsensitive) && cmakePath.isChildOf(qtLibPath))
+                packages.append(name);
+        }
+        return packages;
+    }
+
+    static QString qtVersionString(QtVersion *qtVersion)
+    {
+        return qtVersion ? qtVersion->qtVersion().toString() : QString("None");
+    }
+
     QtModules(QInsightTracker *tracker)
     {
         connect(ProjectManager::instance(),
@@ -163,28 +187,17 @@ public:
                             project->activeBuildSystem()->kit());
                         if (!qtVersion)
                             return;
-                        const FilePath qtLibPath = qtVersion->libraryPath();
-                        using ModuleHash = QHash<QString, Utils::Link>;
-                        const ModuleHash all = project->activeBuildSystem()
-                                                   ->additionalData("FoundPackages")
-                                                   .value<ModuleHash>();
-                        QStringList qtPackages;
-                        for (auto it = all.begin(); it != all.end(); ++it) {
-                            const QString name = it.key();
-                            const FilePath cmakePath = it.value().targetFilePath;
-                            if (name.size() > 4 && name.startsWith("Qt") && name[2].isDigit()
-                                && name[3].isUpper() && !name.endsWith("plugin", Qt::CaseInsensitive)
-                                && cmakePath.isChildOf(qtLibPath))
-                                qtPackages.append(name);
-                        }
+                        const QStringList qtPackages = getQtPackages(project, qtVersion);
                         if (qtPackages.isEmpty())
                             return;
-                        const QString json = "{\"projectid\":\"" + projectId(project)
-                                             + "\",\"qtmodules\":[\"" + qtPackages.join("\",\"")
-                                             + "\"],\"qtversion\":\""
-                                             + qtVersion->qtVersion().toString() + "\"}";
-                        qCDebug(qtmodulesLog) << qPrintable(json);
-                        addEvent(tracker, "QtModules", json);
+                        QJsonObject json;
+                        json.insert("projectid", projectId(project));
+                        json.insert("qtmodules", QJsonArray::fromStringList(qtPackages));
+                        json.insert("qtversion", qtVersionString(qtVersion));
+                        const QString jsonStr = QString::fromUtf8(
+                            QJsonDocument(json).toJson(QJsonDocument::Compact));
+                        qCDebug(qtmodulesLog) << qPrintable(jsonStr);
+                        addEvent(tracker, "QtModules", jsonStr);
                     });
                 });
     }
@@ -373,11 +386,14 @@ public:
             // - so send a hash of the module "name" to telemetry, and the script that processes
             //   that data has a mapping of hash -> known Qt module
             const QStringList moduleHashes = Utils::transform(qmlModules, hashed);
-            const QString json = "{\"projectid\":\"" + projectId + "\",\"qmlmodules\":[\""
-                                 + moduleHashes.join("\",\"") + "\"],\"qtversion\":\""
-                                 + qtVersionString + "\"}";
-            qCDebug(qmlmodulesLog) << qPrintable(json);
-            addEvent(tracker, "QmlModules", json);
+            QJsonObject json;
+            json.insert("projectid", projectId);
+            json.insert("qmlmodules", QJsonArray::fromStringList(moduleHashes));
+            json.insert("qtversion", qtVersionString);
+            const QString jsonStr = QString::fromUtf8(
+                QJsonDocument(json).toJson(QJsonDocument::Compact));
+            qCDebug(qmlmodulesLog) << qPrintable(jsonStr);
+            addEvent(tracker, "QmlModules", jsonStr);
         };
         return ProcessTask(setup, done);
     }
@@ -422,12 +438,14 @@ public:
                                                              .relativeChildPath(examplesPath)
                                                              .parentDir();
                             const QString exampleHash = hashed(examplePath.path());
-                            const QString json = "{\"projectid\":\"" + projectId(project)
-                                                 + "\",\"qtexample\":\"" + exampleHash
-                                                 + "\",\"qtversion\":\""
-                                                 + qtVersion->qtVersion().toString() + "\"}";
-                            qCDebug(qtexampleLog) << qPrintable(json);
-                            addEvent(tracker, "QtExample", json);
+                            QJsonObject json;
+                            json.insert("projectid", projectId(project));
+                            json.insert("qtexample", exampleHash);
+                            json.insert("qtversion", qtVersion->qtVersion().toString());
+                            const QString jsonStr = QString::fromUtf8(
+                                QJsonDocument(json).toJson(QJsonDocument::Compact));
+                            qCDebug(qtexampleLog) << qPrintable(jsonStr);
+                            addEvent(tracker, "QtExample", jsonStr);
                             return;
                         }
                     });
