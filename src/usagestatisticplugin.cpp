@@ -453,6 +453,57 @@ public:
     }
 };
 
+static const char licenseKey[] = "QtLicenseSchema";
+class QtLicense : public QObject
+{
+    Q_OBJECT
+public:
+    static QObject *getLicensechecker()
+    {
+        return PluginManager::getObjectByName("LicenseCheckerPlugin");
+    }
+
+    QtLicense(QInsightTracker *tracker)
+        : m_tracker(tracker)
+    {
+        QObject *licensechecker = getLicensechecker();
+        if (!licensechecker) {
+            addEvent(tracker, licenseKey, "opensource");
+            return;
+        }
+        connect(
+            licensechecker, SIGNAL(licenseInfoAvailableChanged()), this, SLOT(reportLicenseInfo()));
+        reportLicenseInfo();
+    }
+
+private slots:
+    void reportLicenseInfo()
+    {
+        QObject *licensechecker = getLicensechecker();
+        QTC_ASSERT(licensechecker, return);
+        bool available = false;
+        QTC_CHECK(
+            QMetaObject::invokeMethod(
+                licensechecker,
+                "isLicenseInfoAvailable",
+                Qt::DirectConnection,
+                Q_RETURN_ARG(bool, available)));
+        if (!available)
+            return;
+        QString schema;
+        QTC_CHECK(
+            QMetaObject::invokeMethod(
+                licensechecker,
+                "licenseSchema",
+                Qt::DirectConnection,
+                Q_RETURN_ARG(QString, schema)));
+        addEvent(m_tracker, licenseKey, schema);
+    }
+
+private:
+    QInsightTracker *m_tracker = nullptr;
+};
+
 class Settings : public AspectContainer
 {
 public:
@@ -690,6 +741,7 @@ void UsageStatisticPlugin::createProviders()
 #endif
 
     m_providers.push_back(std::make_unique<UILanguage>(m_tracker.get()));
+    m_providers.push_back(std::make_unique<QtLicense>(m_tracker.get()));
 
     // UI state last
     m_providers.push_back(std::make_unique<ModeChanges>(m_tracker.get()));
