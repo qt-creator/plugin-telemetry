@@ -640,21 +640,23 @@ void UsageStatisticPlugin::configureInsight()
 void UsageStatisticPlugin::showInfoBar()
 {
     static const char kInfoBarId[] = "UsageStatistic.AskAboutCollectingDataInfoBar";
-    if (!ICore::infoBar()->canInfoBeAdded(kInfoBarId) || theSettings().trackingEnabled.value())
+    InfoBar *infoBar = ICore::popupInfoBar();
+    if (!infoBar->canInfoBeAdded(kInfoBarId) || theSettings().trackingEnabled.value())
         return;
     static auto infoText = UsageStatisticPlugin::tr(
                                "We make %1 for you. Would you like to help us make it even better?")
                                .arg(QGuiApplication::applicationDisplayName());
-    static auto configureButtonInfoText = UsageStatisticPlugin::tr("Configure usage statistics...");
+    static auto configureButtonInfoText = UsageStatisticPlugin::tr("Configure Usage Statistics...");
     static auto cancelButtonInfoText = UsageStatisticPlugin::tr("Decide later");
 
     ::Utils::InfoBarEntry entry(kInfoBarId, infoText, InfoBarEntry::GlobalSuppression::Enabled);
-    entry.addCustomButton(configureButtonInfoText, [] {
-        ICore::infoBar()->removeInfo(kInfoBarId);
+    entry.setTitle("Usage Statistics");
+    entry.addCustomButton(configureButtonInfoText, [infoBar] {
+        infoBar->removeInfo(kInfoBarId);
         ICore::showOptionsDialog(kSettingsPageId);
     });
     entry.setCancelButtonInfo(cancelButtonInfoText, {});
-    ICore::infoBar()->addInfo(entry);
+    infoBar->addInfo(entry);
 }
 
 void UsageStatisticPlugin::createProviders()
