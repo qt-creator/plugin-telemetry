@@ -27,8 +27,15 @@
 
 #include <projectexplorer/buildmanager.h>
 #include <projectexplorer/buildsystem.h>
+#include <projectexplorer/devicesupport/devicekitaspects.h>
 #include <projectexplorer/project.h>
+#include <projectexplorer/projectexplorerconstants.h>
 #include <projectexplorer/projectmanager.h>
+#include <projectexplorer/toolchain.h>
+#include <projectexplorer/toolchainkitaspect.h>
+
+#include <debugger/debuggeritem.h>
+#include <debugger/debuggerkitaspect.h>
 
 #include <qtsupport/baseqtversion.h>
 #include <qtsupport/qtkitaspect.h>
@@ -46,7 +53,20 @@
 #include <QMetaEnum>
 #include <QTimer>
 
+// BUILD TIME DEPENDENCIES ONLY:
+#include <android/androidconstants.h>
+#include <baremetal/baremetalconstants.h>
+#include <boot2qt/qdbconstants.h>
+#include <devcontainer/devcontainerplugin_constants.h>
+#include <docker/dockerconstants.h>
+#include <ios/iosconstants.h>
+#include <mcusupport/mcusupportconstants.h>
+#include <remotelinux/remotelinux_constants.h>
+#include <webassembly/webassemblyconstants.h>
+#include <qnx/qnxconstants.h>
+
 using namespace Core;
+using namespace Debugger;
 using namespace ExtensionSystem;
 using namespace ProjectExplorer;
 using namespace QtSupport;
@@ -148,7 +168,7 @@ public:
     }
 };
 
-class QtModules : public QObject
+class BuildConfig : public QObject
 {
     Q_OBJECT
 public:
@@ -176,34 +196,142 @@ public:
         return qtVersion ? qtVersion->qtVersion().toString() : QString("None");
     }
 
-    QtModules(QInsightTracker *tracker)
+    static QString nicerDeviceType(const Id &id)
     {
-        connect(ProjectManager::instance(),
-                &ProjectManager::projectAdded,
-                this,
-                [this, tracker](Project *project) {
-                    connect(project, &Project::anyParsingFinished, this, [project, tracker] {
-                        if (!project->activeBuildSystem())
-                            return;
-                        if (!project->activeBuildSystem()->kit())
-                            return;
-                        QtVersion *qtVersion = QtKitAspect::qtVersion(
-                            project->activeBuildSystem()->kit());
-                        if (!qtVersion)
-                            return;
-                        const QStringList qtPackages = getQtPackages(project, qtVersion);
-                        if (qtPackages.isEmpty())
-                            return;
-                        QJsonObject json;
-                        json.insert("projectid", projectId(project));
-                        json.insert("qtmodules", QJsonArray::fromStringList(qtPackages));
-                        json.insert("qtversion", qtVersionString(qtVersion));
-                        const QString jsonStr = QString::fromUtf8(
-                            QJsonDocument(json).toJson(QJsonDocument::Compact));
-                        qCDebug(qtmodulesLog) << qPrintable(jsonStr);
-                        addEvent(tracker, "QtModules", jsonStr);
-                    });
+        if (id == ProjectExplorer::Constants::DESKTOP_DEVICE_TYPE)
+            return "desktop";
+        if (id == Android::Constants::ANDROID_DEVICE_TYPE)
+            return "android";
+        if (id == BareMetal::Constants::BareMetalOsType)
+            return "baremetal";
+        if (id == Qdb::Constants::QdbLinuxOsType)
+            return "boot2qt";
+        if (id == DevContainer::Constants::DEVCONTAINER_DEVICE_TYPE)
+            return "devcontainer";
+        if (id == Docker::Constants::DOCKER_DEVICE_TYPE)
+            return "docker";
+        if (id == Ios::Constants::IOS_DEVICE_TYPE)
+            return "ios";
+        if (id == Ios::Constants::IOS_SIMULATOR_TYPE)
+            return "iossimulator";
+        if (id == McuSupport::Internal::Constants::DEVICE_TYPE)
+            return "mcu";
+        if (id == Qnx::Constants::QNX_QNX_OS_TYPE)
+            return "qnx";
+        if (id == RemoteLinux::Constants::GenericLinuxOsType)
+            return "remotelinux";
+        if (id == WebAssembly::Constants::WEBASSEMBLY_DEVICE_TYPE)
+            return "webassembly";
+        if (id == "VxWorks.Device.Type")
+            return "vxworks";
+        return id.toString();
+    }
+
+    static QString buildDevice(Kit *kit)
+    {
+        return nicerDeviceType(BuildDeviceTypeKitAspect::deviceTypeId(kit));
+    }
+
+    static QString runDevice(Kit *kit)
+    {
+        return nicerDeviceType(RunDeviceTypeKitAspect::deviceTypeId(kit));
+    }
+
+    static QString cppCompiler(Kit *kit)
+    {
+        Toolchain *tc
+            = ToolchainKitAspect::toolchain(kit, ProjectExplorer::Constants::CXX_LANGUAGE_ID);
+        if (!tc)
+            return "None";
+        const Id type = tc->typeId();
+        if (type == Android::Constants::ANDROID_TOOLCHAIN_TYPEID)
+            return "android";
+        if (type == BareMetal::Constants::IAREW_TOOLCHAIN_TYPEID)
+            return "iarew";
+        if (type == BareMetal::Constants::KEIL_TOOLCHAIN_TYPEID)
+            return "keil";
+        if (type == BareMetal::Constants::SDCC_TOOLCHAIN_TYPEID)
+            return "sdcc";
+        if (type == ProjectExplorer::Constants::CUSTOM_TOOLCHAIN_TYPEID)
+            return "custom";
+        if (type == ProjectExplorer::Constants::GCC_TOOLCHAIN_TYPEID)
+            return "gcc";
+        if (type == ProjectExplorer::Constants::CLANG_TOOLCHAIN_TYPEID)
+            return "clang";
+        if (type == ProjectExplorer::Constants::MINGW_TOOLCHAIN_TYPEID)
+            return "mingw";
+        if (type == ProjectExplorer::Constants::LINUXICC_TOOLCHAIN_TYPEID)
+            return "icc";
+        if (type == ProjectExplorer::Constants::MSVC_TOOLCHAIN_TYPEID)
+            return "msvc";
+        if (type == ProjectExplorer::Constants::CLANG_CL_TOOLCHAIN_TYPEID)
+            return "clangcl";
+        if (type == Qnx::Constants::QNX_TOOLCHAIN_ID)
+            return "qnx";
+        if (type == WebAssembly::Constants::WEBASSEMBLY_TOOLCHAIN_TYPEID)
+            return "webassembly";
+        if (type == "VxWorks.ToolChain.Id")
+            return "vxworks";
+        return type.toString();
+    }
+
+    static QString cppCompilerVersion(Kit *kit)
+    {
+        Toolchain *tc
+            = ToolchainKitAspect::toolchain(kit, ProjectExplorer::Constants::CXX_LANGUAGE_ID);
+        if (!tc)
+            return "None";
+        return tc->version().toString();
+    }
+
+    static QString debugger(Kit *kit)
+    {
+        const DebuggerItem *debugger = DebuggerKitAspect::debugger(kit);
+        if (!debugger)
+            return "None";
+        return debugger->engineTypeName();
+    }
+
+    static QString debuggerVersion(Kit *kit)
+    {
+        const DebuggerItem *debugger = DebuggerKitAspect::debugger(kit);
+        if (!debugger)
+            return "None";
+        return debugger->version();
+    }
+
+    BuildConfig(QInsightTracker *tracker)
+    {
+        connect(
+            ProjectManager::instance(),
+            &ProjectManager::projectAdded,
+            this,
+            [this, tracker](Project *project) {
+                connect(project, &Project::anyParsingFinished, this, [project, tracker] {
+                    if (!project->activeBuildSystem())
+                        return;
+                    Kit *kit = project->activeBuildSystem()->kit();
+                    if (!kit)
+                        return;
+                    QtVersion *qtVersion = QtKitAspect::qtVersion(kit);
+                    const QStringList qtPackages = getQtPackages(project, qtVersion);
+                    QJsonObject json;
+                    json.insert("projectid", projectId(project));
+                    json.insert("qtmodules", QJsonArray::fromStringList(qtPackages));
+                    json.insert("qtversion", qtVersionString(qtVersion));
+                    json.insert("buildSystem", project->activeBuildSystem()->name());
+                    json.insert("buildDeviceType", buildDevice(kit));
+                    json.insert("runDeviceType", runDevice(kit));
+                    json.insert("cppCompilerType", cppCompiler(kit));
+                    json.insert("cppCompilerVersion", cppCompilerVersion(kit));
+                    json.insert("debuggerType", debugger(kit));
+                    json.insert("debuggerVersion", debuggerVersion(kit));
+                    const QString jsonStr = QString::fromUtf8(
+                        QJsonDocument(json).toJson(QJsonDocument::Compact));
+                    qCDebug(qtmodulesLog) << qPrintable(jsonStr);
+                    addEvent(tracker, "BuildConfig", jsonStr);
                 });
+            });
     }
 };
 
@@ -739,7 +867,7 @@ void UsageStatisticPlugin::createProviders()
     // module and example telemetry require QInsightTracker::contextData to
     // work reliably, because the key of QInsightTracker::interaction is limited to 255 characters.
 #if QT_VERSION >= QT_WITH_CONTEXTDATA
-    m_providers.push_back(std::make_unique<QtModules>(m_tracker.get()));
+    m_providers.push_back(std::make_unique<BuildConfig>(m_tracker.get()));
     m_providers.push_back(std::make_unique<QtExample>(m_tracker.get()));
     m_providers.push_back(std::make_unique<QmlModules>(m_tracker.get()));
 #endif
