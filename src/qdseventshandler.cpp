@@ -32,17 +32,14 @@ QDSEventsHandler::QDSEventsHandler(QInsightTracker* tracker)
     });
 
     connect(qmlDesignerPlugin,
-            &QmlDesignerPlugin::usageStatisticsUsageTimer,
-            this,
-            [&](QString identifier, int elapsed){
-                tracker->transition(identifier);
-    });
-
-    connect(qmlDesignerPlugin,
-            &QmlDesignerPlugin::usageStatisticsUsageDuration,
+            &QmlDesignerPlugin::transitionToScreen,
             this,
             [&](QString identifier){
-                tracker->interaction(identifier);
+                if (m_lastIdentifier == identifier)
+                    return;
+
+                tracker->transition(identifier);
+                m_lastIdentifier = identifier;
     });
 
     connect(qmlDesignerPlugin,

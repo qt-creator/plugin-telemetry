@@ -10,6 +10,9 @@ class QDSEventsHandler : public QObject
 {
 public:
     QDSEventsHandler(QInsightTracker* tracker);
+
+private:
+    QString m_lastIdentifier;
 };
 
 } // namespace UsageStatistic::Internal
