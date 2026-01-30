@@ -859,7 +859,7 @@ void UsageStatisticPlugin::showInfoBar()
     entry.setTitle("Usage Statistics");
     entry.addCustomButton(configureButtonInfoText, [infoBar] {
         infoBar->removeInfo(kInfoBarId);
-        ICore::showOptionsDialog(kSettingsPageId);
+        ICore::showSettings(kSettingsPageId);
     });
     entry.setCancelButtonInfo(cancelButtonInfoText, {});
     infoBar->addInfo(entry);
