@@ -652,6 +652,48 @@ public:
         trackingEnabled.setSettingsKey("TrackingEnabled");
         trackingEnabled.setLabel(UsageStatisticPlugin::tr("Send pseudonymous usage statistics"),
                                  BoolAspect::LabelPlacement::AtCheckBox);
+
+        connect(this, &AspectContainer::applied, this, [this]{
+            writeToSettingsImmediatly(); // write the updated "TrackingEnabled" value to the .ini
+            m_instance->configureInsight();
+        });
+        setLayouter([this] {
+            using namespace Layouting;
+            auto moreInformationLabel = new QLabel(
+                "<a "
+                "href=\"qthelp://org.qt-project.qtcreator/doc/"
+                "creator-how-to-collect-usage-statistics.html\">"
+                + UsageStatisticPlugin::tr("More information") + "</a>");
+            connect(moreInformationLabel, &QLabel::linkActivated, [this](const QString &link) {
+                HelpManager::showHelpUrl(link, HelpManager::ExternalHelpAlways);
+            });
+            // clang-format off
+            Column col{
+                trackingEnabled,
+                Group {
+                    Column {
+                        Label {
+                            text(UsageStatisticPlugin::tr("%1 collects pseudonymous information about "
+                                 "your system and the way you use the application. The data is "
+                                 "associated with a pseudonymous user ID generated only for this "
+                                 "purpose. The data will be shared with services managed by "
+                                 "The Qt Company. It does however not contain individual content "
+                                 "created by you, and will be used by The Qt Company strictly for the "
+                                 "purposes of improving their products.")
+                                    .arg(QGuiApplication::applicationDisplayName())),
+                            wordWrap(true)
+                        },
+                        moreInformationLabel,
+                        st
+                    }
+                }
+            };
+            // clang-format on
+
+            readSettings();
+
+            return col;
+        });
     }
 
     Utils::BoolAspect trackingEnabled{this};
@@ -663,54 +705,6 @@ static Settings &theSettings()
     return settings;
 }
 
-class SettingsWidget : public IOptionsPageWidget
-{
-public:
-    SettingsWidget()
-    {
-        Settings &s = theSettings();
-
-        using namespace Layouting;
-        auto moreInformationLabel = new QLabel(
-            "<a "
-            "href=\"qthelp://org.qt-project.qtcreator/doc/"
-            "creator-how-to-collect-usage-statistics.html\">"
-            + UsageStatisticPlugin::tr("More information") + "</a>");
-        connect(moreInformationLabel, &QLabel::linkActivated, [this](const QString &link) {
-            HelpManager::showHelpUrl(link, HelpManager::ExternalHelpAlways);
-        });
-        // clang-format off
-        Column {
-            s.trackingEnabled,
-            Group {
-                Column {
-                    Label {
-                        text(UsageStatisticPlugin::tr("%1 collects pseudonymous information about "
-                             "your system and the way you use the application. The data is "
-                             "associated with a pseudonymous user ID generated only for this "
-                             "purpose. The data will be shared with services managed by "
-                             "The Qt Company. It does however not contain individual content "
-                             "created by you, and will be used by The Qt Company strictly for the "
-                             "purposes of improving their products.")
-                                .arg(QGuiApplication::applicationDisplayName())),
-                        wordWrap(true)
-                    },
-                    moreInformationLabel,
-                    st
-                }
-            }
-        }.attachTo(this);
-        // clang-format on
-
-        setOnApply([] {
-            theSettings().apply();
-            theSettings().writeToSettingsImmediatly(); // write the updated "TrackingEnabled" value to the .ini
-            m_instance->configureInsight();
-        });
-        setOnCancel([] { theSettings().cancel(); });
-    }
-};
-
 class SettingsPage final : public Core::IOptionsPage
 {
 public:
@@ -719,7 +713,7 @@ public:
         setId(kSettingsPageId);
         setCategory("Telemetry");
         setDisplayName(UsageStatisticPlugin::tr("Usage Statistics"));
-        setWidgetCreator([] { return new SettingsWidget; });
+        setSettingsProvider([] { return &theSettings(); });
     }
 };
 
