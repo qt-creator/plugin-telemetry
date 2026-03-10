@@ -204,7 +204,7 @@ public:
             return "android";
         if (id == BareMetal::Constants::BareMetalOsType)
             return "baremetal";
-        if (id == Qdb::Constants::QdbLinuxOsType)
+        if (id == ProjectExplorer::Constants::BOOT2QT_DEVICE_TYPE)
             return "boot2qt";
         if (id == DevContainer::Constants::DEVCONTAINER_DEVICE_TYPE)
             return "devcontainer";
