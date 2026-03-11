@@ -535,7 +535,7 @@ public:
 
     QHash<BuildConfiguration *, QmlCodeModelInfo> m_qmlCodeModelInfo;
     QSet<Project *> m_buildingProjects;
-    QMappedTaskTreeRunner<Project *> m_runner;
+    QtTaskTree::QMappedTaskTreeRunner<Project *> m_runner;
 };
 
 class QtExample : public QObject
