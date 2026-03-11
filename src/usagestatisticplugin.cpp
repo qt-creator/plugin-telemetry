@@ -153,21 +153,6 @@ public:
     }
 };
 
-class AndroidManifestGuiEnabled : public QObject
-{
-    Q_OBJECT
-
-public:
-    AndroidManifestGuiEnabled(QInsightTracker *tracker)
-    {
-        connect(ExtensionSystem::PluginManager::instance(), &ExtensionSystem::PluginManager::objectAdded,
-        this, [this, tracker](QObject *object) {
-            if (object->objectName() == QString("AndroidManifestEditorEnabled"))
-                addEvent(tracker, ":ANDROID:ManifestGuiEditorEnabled", object->objectName());
-        });
-    }
-};
-
 class BuildConfig : public QObject
 {
     Q_OBJECT
@@ -204,7 +189,7 @@ public:
             return "android";
         if (id == BareMetal::Constants::BareMetalOsType)
             return "baremetal";
-        if (id == Qdb::Constants::QdbLinuxOsType)
+        if (id == ProjectExplorer::Constants::BOOT2QT_DEVICE_TYPE)
             return "boot2qt";
         if (id == DevContainer::Constants::DEVCONTAINER_DEVICE_TYPE)
             return "devcontainer";
@@ -876,9 +861,6 @@ void UsageStatisticPlugin::createProviders()
 
     // UI state last
     m_providers.push_back(std::make_unique<ModeChanges>(m_tracker.get()));
-
-    //Android Manifest enabled
-    m_providers.push_back(std::make_unique<AndroidManifestGuiEnabled>(m_tracker.get()));
 
     for (const auto &provider : m_providers) {
         qCDebug(statLog) << "Created usage statistics provider"
