@@ -271,18 +271,18 @@ public:
 
     static QString debugger(Kit *kit)
     {
-        const DebuggerItem *debugger = DebuggerKitAspect::debugger(kit);
-        if (!debugger)
+        const DebuggerItem debugger = DebuggerKitAspect::debugger(kit);
+        if (!debugger.isValid())
             return "None";
-        return debugger->engineTypeName();
+        return debugger.engineTypeName();
     }
 
     static QString debuggerVersion(Kit *kit)
     {
-        const DebuggerItem *debugger = DebuggerKitAspect::debugger(kit);
-        if (!debugger)
+        const DebuggerItem debugger = DebuggerKitAspect::debugger(kit);
+        if (!debugger.isValid())
             return "None";
-        return debugger->version();
+        return debugger.version();
     }
 
     BuildConfig(QInsightTracker *tracker)
