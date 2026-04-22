@@ -83,11 +83,11 @@ namespace UsageStatistic::Internal {
 
 static UsageStatisticPlugin *m_instance = nullptr;
 
-#define QT_WITH_CONTEXTDATA QT_VERSION_CHECK(6, 9, 2)
+#define QTVERSION_WITH_CONTEXTDATA QT_VERSION_CHECK(6, 9, 2)
 
 static void addEvent(QInsightTracker *tracker, const QString &key, const QString &data)
 {
-#if QT_VERSION >= QT_WITH_CONTEXTDATA
+#if QT_VERSION >= QTVERSION_WITH_CONTEXTDATA
     tracker->contextData(key, data);
 #else
     tracker->interaction(key, data, 0);
@@ -467,6 +467,8 @@ public:
         const auto done = [projectId,
                            qtVersionString,
                            tracker = QPointer<QInsightTracker>(tracker)](const Process &process) {
+            if (!tracker)
+                return;
             QJsonParseError error;
             const auto doc = QJsonDocument::fromJson(process.rawStdOut(), &error);
             if (error.error != QJsonParseError::NoError) {
@@ -775,7 +777,7 @@ void UsageStatisticPlugin::configureInsight()
             static std::optional<QLoggingCategory::CategoryFilter> previousFilter;
             if (!statLog().isDebugEnabled()) {
                 previousFilter = QLoggingCategory::installFilter([](QLoggingCategory *log) {
-                    if (previousFilter && previousFilter.has_value())
+                    if (previousFilter && *previousFilter != nullptr)
                         (*previousFilter)(log);
                     if (QString::fromUtf8(log->categoryName()).startsWith("qt.insight"))
                         log->setEnabled(QtInfoMsg, false);
@@ -813,13 +815,6 @@ void UsageStatisticPlugin::configureInsight()
         if (m_tracker)
             m_tracker->setEnabled(false);
     }
-
-    Core::Command *cmd = Core::ActionManager::command("Help.GiveFeedback");
-
-    if (cmd) {
-        cmd->action()->setEnabled(m_tracker->isEnabled());
-        cmd->action()->setVisible(m_tracker->isEnabled());
-    }
 }
 
 void UsageStatisticPlugin::showInfoBar()
@@ -850,7 +845,7 @@ void UsageStatisticPlugin::createProviders()
     m_providers.push_back(std::make_unique<Theme>(m_tracker.get()));
     // module and example telemetry require QInsightTracker::contextData to
     // work reliably, because the key of QInsightTracker::interaction is limited to 255 characters.
-#if QT_VERSION >= QT_WITH_CONTEXTDATA
+#if QT_VERSION >= QTVERSION_WITH_CONTEXTDATA
     m_providers.push_back(std::make_unique<BuildConfig>(m_tracker.get()));
     m_providers.push_back(std::make_unique<QtExample>(m_tracker.get()));
     m_providers.push_back(std::make_unique<QmlModules>(m_tracker.get()));
