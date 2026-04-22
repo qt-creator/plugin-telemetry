@@ -76,6 +76,7 @@ Q_LOGGING_CATEGORY(statLog, "qtc.usagestatistic", QtWarningMsg);
 Q_LOGGING_CATEGORY(qtmodulesLog, "qtc.usagestatistic.qtmodules", QtWarningMsg);
 Q_LOGGING_CATEGORY(qtexampleLog, "qtc.usagestatistic.qtexample", QtWarningMsg);
 Q_LOGGING_CATEGORY(qmlmodulesLog, "qtc.usagestatistic.qmlmodules", QtWarningMsg);
+Q_LOGGING_CATEGORY(projectWizardLog, "qtc.usagestatistic.projectwizard", QtWarningMsg);
 
 const char kSettingsPageId[] = "UsageStatistic.PreferencesPage";
 
@@ -94,10 +95,10 @@ static void addEvent(QInsightTracker *tracker, const QString &key, const QString
 #endif
 }
 
-static QString hashed(const QString &path)
+static QString hashed(const QString &value)
 {
     return QString::fromLatin1(
-        QCryptographicHash::hash(path.toUtf8(), QCryptographicHash::Sha1).toHex());
+        QCryptographicHash::hash(value.toUtf8(), QCryptographicHash::Sha1).toHex());
 }
 
 static QString projectId(Project *project)
@@ -628,6 +629,24 @@ private:
     QInsightTracker *m_tracker = nullptr;
 };
 
+class Wizard : public QObject
+{
+    Q_OBJECT
+public:
+    Wizard(QInsightTracker *tracker)
+    {
+        connect(ICore::instance(), &ICore::wizardFinished, this, [tracker](const Utils::Id &id, bool accepted) {
+            QJsonObject json;
+            json.insert("id", hashed(id.toString()));
+            json.insert("accepted", accepted);
+            const QString jsonStr = QString::fromUtf8(
+                QJsonDocument(json).toJson(QJsonDocument::Compact));
+            qCDebug(projectWizardLog) << qPrintable(jsonStr);
+            addEvent(tracker, "Wizard", jsonStr);
+        });
+    }
+};
+
 class Settings : public AspectContainer
 {
 public:
@@ -853,6 +872,7 @@ void UsageStatisticPlugin::createProviders()
 
     m_providers.push_back(std::make_unique<UILanguage>(m_tracker.get()));
     m_providers.push_back(std::make_unique<QtLicense>(m_tracker.get()));
+    m_providers.push_back(std::make_unique<Wizard>(m_tracker.get()));
 
     // UI state last
     m_providers.push_back(std::make_unique<ModeChanges>(m_tracker.get()));
