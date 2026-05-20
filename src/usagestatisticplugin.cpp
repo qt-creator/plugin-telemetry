@@ -44,6 +44,8 @@
 #include <QtTaskTree/QSingleTaskTreeRunner>
 
 #include <QCryptographicHash>
+#include <QDialog>
+#include <QDialogButtonBox>
 #include <QGuiApplication>
 #include <QInsightConfiguration>
 #include <QInsightTracker>
@@ -647,6 +649,27 @@ public:
     }
 };
 
+static QString consentText()
+{
+    return UsageStatisticPlugin::tr(
+               "%1 collects pseudonymous information about "
+               "your system and the way you use the application. The data is "
+               "associated with a pseudonymous user ID generated only for this "
+               "purpose. The data will be shared with services managed by "
+               "The Qt Company. It does however not contain individual content "
+               "created by you, and will be used by The Qt Company strictly for the "
+               "purposes of improving their products.")
+        .arg(QGuiApplication::applicationDisplayName());
+}
+
+static QString moreInformationText()
+{
+    return "<a "
+           "href=\"qthelp://org.qt-project.qtcreator/doc/"
+           "creator-how-to-collect-usage-statistics.html\">"
+           + UsageStatisticPlugin::tr("More information") + "</a>";
+}
+
 class Settings : public AspectContainer
 {
 public:
@@ -658,38 +681,27 @@ public:
         trackingEnabled.setSettingsKey("TrackingEnabled");
         trackingEnabled.setLabel(UsageStatisticPlugin::tr("Send pseudonymous usage statistics"),
                                  BoolAspect::LabelPlacement::AtCheckBox);
-
-        connect(this, &AspectContainer::applied, this, [this]{
+        trackingEnabled.addOnChanged(this, [this] {
             writeToSettingsImmediatly(); // write the updated "TrackingEnabled" value to the .ini
             m_instance->configureInsight();
         });
         setLayouter([this] {
             using namespace Layouting;
-            auto moreInformationLabel = new QLabel(
-                "<a "
-                "href=\"qthelp://org.qt-project.qtcreator/doc/"
-                "creator-how-to-collect-usage-statistics.html\">"
-                + UsageStatisticPlugin::tr("More information") + "</a>");
-            connect(moreInformationLabel, &QLabel::linkActivated, [this](const QString &link) {
-                HelpManager::showHelpUrl(link, HelpManager::ExternalHelpAlways);
-            });
             // clang-format off
             Column col{
                 trackingEnabled,
                 Group {
                     Column {
                         Label {
-                            text(UsageStatisticPlugin::tr("%1 collects pseudonymous information about "
-                                 "your system and the way you use the application. The data is "
-                                 "associated with a pseudonymous user ID generated only for this "
-                                 "purpose. The data will be shared with services managed by "
-                                 "The Qt Company. It does however not contain individual content "
-                                 "created by you, and will be used by The Qt Company strictly for the "
-                                 "purposes of improving their products.")
-                                    .arg(QGuiApplication::applicationDisplayName())),
+                            text(consentText()),
                             wordWrap(true)
                         },
-                        moreInformationLabel,
+                        Label {
+                            text(moreInformationText()),
+                            onLinkActivated(this, [this](const QString &link) {
+                                HelpManager::showHelpUrl(link, HelpManager::ExternalHelpAlways);
+                            })
+                        },
                         st
                     }
                 }
@@ -845,14 +857,50 @@ void UsageStatisticPlugin::showInfoBar()
     static auto infoText = UsageStatisticPlugin::tr(
                                "We make %1 for you. Would you like to help us make it even better?")
                                .arg(QGuiApplication::applicationDisplayName());
-    static auto configureButtonInfoText = UsageStatisticPlugin::tr("Configure Usage Statistics...");
+    static auto enableButtonText = UsageStatisticPlugin::tr("Enable Usage Statistics...");
     static auto cancelButtonInfoText = UsageStatisticPlugin::tr("Decide later");
 
     ::Utils::InfoBarEntry entry(kInfoBarId, infoText, InfoBarEntry::GlobalSuppression::Enabled);
     entry.setTitle("Usage Statistics");
-    entry.addCustomButton(configureButtonInfoText, [infoBar] {
+    entry.addCustomButton(enableButtonText, [infoBar] {
         infoBar->removeInfo(kInfoBarId);
-        ICore::showSettings(kSettingsPageId);
+        auto dialog = new QDialog(ICore::dialogParent());
+        dialog->setAttribute(Qt::WA_DeleteOnClose);
+        dialog->setWindowTitle(UsageStatisticPlugin::tr("Enable Usage Statistics"));
+        ICore::registerWindow(dialog, Context("UsageStatistics.EnableDialog"));
+        auto label = new QLabel(consentText());
+        label->setWordWrap(true);
+        const QString preferencesText
+            = Utils::HostOsInfo::isMacHost()
+                  ? UsageStatisticPlugin::tr("%1 > Preferences > Telemetry > Usage Statistics")
+                        .arg(QGuiApplication::applicationDisplayName())
+                  : UsageStatisticPlugin::tr("Edit > Preferences > Telemetry > Usage Statistics");
+        auto preferencesLabel = new QLabel(
+            UsageStatisticPlugin::tr("Change this later in %1.")
+                .arg("<a href=\"settings\">" + preferencesText + "</a>"));
+        preferencesLabel->setOpenExternalLinks(false);
+        QObject::connect(preferencesLabel, &QLabel::linkActivated, dialog, [dialog] {
+            dialog->reject();
+            ICore::showSettings(kSettingsPageId);
+        });
+        auto moreInformationLabel = new QLabel(moreInformationText());
+        moreInformationLabel->setOpenExternalLinks(false);
+        QObject::connect(moreInformationLabel, &QLabel::linkActivated, [](const QString &link) {
+            HelpManager::showHelpUrl(link, HelpManager::ExternalHelpAlways);
+        });
+        auto buttonBox = new QDialogButtonBox;
+        buttonBox->addButton(
+            UsageStatisticPlugin::tr("Cancel"), QDialogButtonBox::RejectRole);
+        buttonBox->addButton(
+            UsageStatisticPlugin::tr("Enable Usage Statistics"), QDialogButtonBox::AcceptRole);
+        QObject::connect(buttonBox, &QDialogButtonBox::accepted, dialog, &QDialog::accept);
+        QObject::connect(buttonBox, &QDialogButtonBox::rejected, dialog, &QDialog::reject);
+        QObject::connect(dialog, &QDialog::accepted, [] {
+            theSettings().trackingEnabled.setValue(true);
+        });
+        using namespace Layouting;
+        Column{label, preferencesLabel, moreInformationLabel, buttonBox}.attachTo(dialog);
+        dialog->show();
     });
     entry.setCancelButtonInfo(cancelButtonInfoText, {});
     infoBar->addInfo(entry);
