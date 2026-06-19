@@ -848,12 +848,52 @@ void UsageStatisticPlugin::configureInsight()
     }
 }
 
+static std::optional<bool> installerUserFeedbackEnabled()
+{
+    constexpr char kUserFeedback[] = "UserFeedback/StatisticsCollectionMode";
+    QSettings installerSettings("QtProject", "UserFeedback.QtCreator");
+    if (installerSettings.contains(kUserFeedback))
+        return installerSettings.value(kUserFeedback).toString() != "UsageStatisticsDisabled";
+    return {};
+}
+
+const char kCachedInstallerUserFeedback[] = "UsageStatistic/CachedInstallerTrackingEnabled";
+static std::optional<bool> cachedInstallerUserFeedbackEnabled()
+{
+    QtcSettings *settings = ICore::settings();
+    if (settings->contains(kCachedInstallerUserFeedback))
+        return settings->value(kCachedInstallerUserFeedback).toBool();
+    return {};
+}
+static void setCachedInstallerUserFeedbackEnabled(const std::optional<bool> &value)
+{
+    QtcSettings *settings = ICore::settings();
+    if (value)
+        settings->setValue(kCachedInstallerUserFeedback, *value);
+    else
+        settings->remove(kCachedInstallerUserFeedback);
+}
+
 void UsageStatisticPlugin::showInfoBar()
 {
     static const char kInfoBarId[] = "UsageStatistic.AskAboutCollectingDataInfoBar";
     InfoBar *infoBar = ICore::popupInfoBar();
-    if (!infoBar->canInfoBeAdded(kInfoBarId) || theSettings().trackingEnabled.value())
+    if (infoBar->containsInfo(kInfoBarId))
+        return; // already shown, no need to do anything
+
+    const std::optional<bool> installerValue = installerUserFeedbackEnabled();
+    const std::optional<bool> cachedInstallerValue = cachedInstallerUserFeedbackEnabled();
+    setCachedInstallerUserFeedbackEnabled(installerValue);
+
+    // Installer value changed (or no cached value) and Qt Creator settings don't match
+    // --> force asking
+    const bool forceAsk = installerValue.has_value()
+        && installerValue != cachedInstallerValue
+        && theSettings().trackingEnabled() != *installerValue;
+    if (!forceAsk && (!infoBar->canInfoBeAdded(kInfoBarId) || theSettings().trackingEnabled()))
         return;
+    infoBar->globallyUnsuppressInfo(kInfoBarId);
+
     static auto infoText = UsageStatisticPlugin::tr(
                                "We make %1 for you. Would you like to help us make it even better?")
                                .arg(QGuiApplication::applicationDisplayName());
