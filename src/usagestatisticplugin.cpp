@@ -63,7 +63,7 @@
 #include <docker/dockerconstants.h>
 #include <ios/iosconstants.h>
 #include <mcusupport/mcusupportconstants.h>
-#include <remotelinux/remotelinux_constants.h>
+#include <remote/remotelinux_constants.h>
 #include <webassembly/webassemblyconstants.h>
 #include <qnx/qnxconstants.h>
 
@@ -206,7 +206,7 @@ public:
             return "mcu";
         if (id == Qnx::Constants::QNX_QNX_OS_TYPE)
             return "qnx";
-        if (id == RemoteLinux::Constants::GenericLinuxOsType)
+        if (id == Remote::Constants::GenericLinuxOsType)
             return "remotelinux";
         if (id == WebAssembly::Constants::WEBASSEMBLY_DEVICE_TYPE)
             return "webassembly";
