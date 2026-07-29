@@ -762,7 +762,7 @@ bool UsageStatisticPlugin::delayedInitialize()
 ExtensionSystem::IPlugin::ShutdownFlag UsageStatisticPlugin::aboutToShutdown()
 {
     theSettings().writeSettings();
-
+    m_providers.clear();
     return SynchronousShutdown;
 }
 
