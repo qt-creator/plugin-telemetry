@@ -320,6 +320,13 @@ public:
                     addEvent(tracker, "BuildConfig", jsonStr);
                 });
             });
+        connect(
+            ProjectManager::instance(),
+            &ProjectManager::aboutToRemoveProject,
+            this,
+            [this](Project *project) {
+                disconnect(project, &Project::anyParsingFinished, this, nullptr);
+            });
     }
 };
 
@@ -577,6 +584,13 @@ public:
                         }
                     });
                 });
+        connect(
+            ProjectManager::instance(),
+            &ProjectManager::aboutToRemoveProject,
+            this,
+            [this](Project *project) {
+                disconnect(project, &Project::anyParsingFinished, this, nullptr);
+            });
     }
 };
 
