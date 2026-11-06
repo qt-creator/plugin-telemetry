@@ -369,6 +369,9 @@ public:
                 QtVersion *qtVersion = QtKitAspect::qtVersion(project->activeBuildSystem()->kit());
                 if (!qtVersion)
                     return;
+                const QString projectName = project->displayName();
+                qCDebug(qmlmodulesLog) << qPrintable(
+                    QString("Checking for QML modules for project \"%1\".").arg(projectName));
                 const FilePath qmlimportscanner = qtVersion->hostLibexecPath()
                                                       .pathAppended("qmlimportscanner")
                                                       .withExecutableSuffix();
@@ -377,26 +380,14 @@ public:
                     = m_qmlCodeModelInfo.value(project->activeBuildConfiguration()).qmlImportPaths;
                 if (!qtImportPath.isEmpty())
                     importPaths << qtImportPath;
-                const FilePaths qmlFiles = project->files([](const Node *n) -> bool {
-                    const FilePath filePath = n->filePath();
-                    if (!n->asFileNode() || n->isGenerated() || !n->isEnabled()
-                        || filePath.isEmpty())
-                        return false;
-                    const MimeType mimeType
-                        = mimeTypeForFile(filePath, MimeMatchMode::MatchExtension);
-                    return mimeType.matchesName(Utils::Constants::QML_MIMETYPE)
-                           || mimeType.matchesName(Utils::Constants::QMLUI_MIMETYPE);
+                const FilePaths allFiles = project->files([](const Node *n) -> bool {
+                    return n->asFileNode() && !n->isGenerated() && n->isEnabled();
                 });
-                if (qmlFiles.isEmpty()) {
-                    qCDebug(qmlmodulesLog) << QString("No QML files found for project \"%1\".")
-                                                  .arg(project->displayName());
+                if (allFiles.isEmpty()) {
+                    qCDebug(qmlmodulesLog) << qPrintable(
+                        QString("No files found for project \"%1\".").arg(projectName));
                     return;
                 }
-                qCDebug(qmlmodulesLog) << QString("Starting \"%1\" for project \"%2\" and files %3")
-                                              .arg(
-                                                  qmlimportscanner.toUserOutput(),
-                                                  project->displayName(),
-                                                  qmlFiles.toUserOutput(", "));
                 const QString id = projectId(project);
                 const QString qtVersionString = qtVersion->qtVersion().toString();
 
@@ -407,25 +398,36 @@ public:
                     QtTaskTree::Group{
                         QtTaskTree::sequential,
                         storage,
-                        createResponseFile(storage, qmlimportscanner, qmlFiles, importPaths),
-                        runQmlImportScanner(storage, qmlimportscanner, id, qtVersionString, tracker)});
+                        createResponseFile(storage, qmlimportscanner, allFiles, importPaths),
+                        runQmlImportScanner(
+                            storage, qmlimportscanner, projectName, id, qtVersionString, tracker)});
             });
     }
 
     QtTaskTree::ExecutableItem createResponseFile(
         const ScanStorage &storage,
         const FilePath &qmlimportscanner,
-        const FilePaths &qmlFiles,
+        const FilePaths &allFiles,
         const FilePaths &importPaths)
     {
-        const auto setup = [qmlimportscanner, qmlFiles, importPaths](
+        const auto setup = [qmlimportscanner, allFiles, importPaths](
                                Async<Result<TemporaryFilePath *>> &async) {
             async.setConcurrentCallData(
                 [](const FilePath &qmlimportscanner,
-                   const FilePaths &qmlFiles,
+                   const FilePaths &allFiles,
                    const FilePaths &importPaths) -> Result<TemporaryFilePath *> {
-                    // Remove files that do not exist
-                    const FilePaths actualQmlFiles = Utils::filtered(qmlFiles, &FilePath::exists);
+                    // Collect existing QML files
+                    const FilePaths actualQmlFiles
+                        = Utils::filtered(allFiles, [](const FilePath &file) {
+                              const MimeType mimeType
+                                  = mimeTypeForFile(file, MimeMatchMode::MatchExtension);
+                              const bool isQml
+                                  = mimeType.matchesName(Utils::Constants::QML_MIMETYPE)
+                                    || mimeType.matchesName(Utils::Constants::QMLUI_MIMETYPE);
+                              return isQml && file.exists();
+                          });
+                    if (actualQmlFiles.isEmpty())
+                        return nullptr;
                     const Result<FilePath> tmpDir = qmlimportscanner.tmpDir();
                     if (!tmpDir)
                         return ResultError("Failed to determine temporary directory");
@@ -449,7 +451,7 @@ public:
                     return tempPath->release();
                 },
                 qmlimportscanner,
-                qmlFiles,
+                allFiles,
                 importPaths);
         };
         const auto done = [storage](const Async<Result<TemporaryFilePath *>> &async) {
@@ -467,12 +469,21 @@ public:
     QtTaskTree::ExecutableItem runQmlImportScanner(
         const ScanStorage &storage,
         const FilePath &qmlimportscanner,
+        const QString &projectName,
         const QString &projectId,
         const QString &qtVersionString,
         QInsightTracker *tracker)
     {
-        const auto setup = [qmlimportscanner, storage](Process &process) {
+        const auto setup = [qmlimportscanner, projectName, storage](Process &process) {
+            if (!*storage) {
+                qCDebug(qmlmodulesLog) << "No QML files found, skipping qmlimportscanner.";
+                return QtTaskTree::SetupResult::StopWithSuccess;
+            }
+            qCDebug(qmlmodulesLog)
+                << qPrintable(QString("Starting \"%1\" for project \"%2\".")
+                                  .arg(qmlimportscanner.toUserOutput(), projectName));
             process.setCommand({qmlimportscanner, {"@" + (*storage)->filePath().nativePath()}});
+            return QtTaskTree::SetupResult::Continue;
         };
         const auto done = [projectId,
                            qtVersionString,
